@@ -1,4 +1,5 @@
 -- CHRDK / РУБЕЖ — authoritative cooperative tower defense server.
+print("[РУБЕЖ] server script started")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -27,7 +28,31 @@ local function remote(name)
 	local event = Instance.new("RemoteEvent"); event.Name = name; event.Parent = remotes; return event
 end
 local StateRemote, ActionRemote, EffectsRemote, NoticeRemote = remote("State"), remote("Action"), remote("Effects"), remote("Notice")
-local mapRoot = Map.Build()
+ReplicatedStorage:SetAttribute("TD_BootStage", "map")
+local ok, mapOrError = xpcall(Map.Build, function(err) return debug.traceback(tostring(err), 2) end)
+if not ok then
+	local message = "Map.Build failed: " .. tostring(mapOrError)
+	warn("[РУБЕЖ] ", message)
+	ReplicatedStorage:SetAttribute("TD_InitError", message)
+	-- Emergency floor so the player does not fall into the void while diagnosing.
+	local emergency = Instance.new("Part")
+	emergency.Name = "TD_EmergencyFloor"
+	emergency.Size = Vector3.new(80, 1, 80)
+	emergency.CFrame = CFrame.new(0, -1, 0)
+	emergency.Anchored = true
+	emergency.Color = Color3.fromRGB(45, 77, 67)
+	emergency.Parent = workspace
+	local spawn = Instance.new("SpawnLocation")
+	spawn.Name = "TD_EmergencySpawn"
+	spawn.Size = Vector3.new(12, 1, 12)
+	spawn.CFrame = CFrame.new(0, 0.5, 0)
+	spawn.Anchored = true
+	spawn.Neutral = true
+	spawn.Parent = workspace
+	return
+end
+local mapRoot = mapOrError
+ReplicatedStorage:SetAttribute("TD_BootStage", "ready")
 Enemies:Init(mapRoot:WaitForChild("Enemies"))
 Towers:Init(mapRoot:WaitForChild("Towers"))
 Profiles:Init()

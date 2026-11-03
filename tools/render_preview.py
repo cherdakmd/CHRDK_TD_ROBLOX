@@ -69,7 +69,7 @@ def main() -> None:
     <path d="M {start_x - 5:.1f} {start_y - 7:.1f} l 10 7 l -10 7" fill="none" stroke="#ffb1a7" stroke-width="3"/>
     <circle cx="{end_x:.1f}" cy="{end_y:.1f}" r="23" fill="#173d40" stroke="#7eefc1" stroke-width="3"/>
     <path d="M {end_x:.1f} {end_y - 15:.1f} l 11 15 l -11 15 l -11 -15 Z" fill="#a5ffe0"/>
-    <text x="1070" y="520" text-anchor="middle" font-size="12" letter-spacing="2" fill="#9eb9c2">СХЕМА КАРТЫ · НЕ СКРИНШОТ · v0.1.0</text>
+    <text x="1070" y="520" text-anchor="middle" font-size="12" letter-spacing="2" fill="#9eb9c2">СХЕМА КАРТЫ · НЕ СКРИНШОТ · v0.1.1</text>
   </g>
 </svg>
 '''

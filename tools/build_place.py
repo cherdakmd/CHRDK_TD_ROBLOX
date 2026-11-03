@@ -58,8 +58,9 @@ class PlaceBuilder:
         props = self.properties(element)
         source = path.read_text(encoding="utf-8")
         self.prop(props, "ProtectedString", "Source", source)
-        if class_name == "Script":
-            self.prop(props, "bool", "Enabled", "true")
+        if class_name in ("Script", "LocalScript"):
+            # BaseScript.Disabled is the serialized property; Enabled is not saved.
+            self.prop(props, "bool", "Disabled", "false")
 
     def tree(self, parent: ET.Element, directory: Path) -> None:
         for path in sorted(directory.iterdir()):

@@ -45,6 +45,11 @@ class ProjectTests(unittest.TestCase):
         classes = {item.attrib.get("class") for item in root.iter("Item")}
         for class_name in ("Workspace", "ReplicatedStorage", "ServerScriptService", "StarterPlayerScripts", "Script", "LocalScript", "ModuleScript"):
             self.assertIn(class_name, classes)
+        for item in root.iter("Item"):
+            if item.attrib.get("class") in ("Script", "LocalScript"):
+                disabled = item.find("./Properties/bool[@name='Disabled']")
+                self.assertIsNotNone(disabled, "BaseScript.Disabled must be serialized")
+                self.assertEqual(disabled.text, "false")
         sources = [node.text for node in root.iter("ProtectedString") if node.attrib.get("name") == "Source"]
         self.assertEqual(len(sources), len(list((ROOT / "src").rglob("*.luau"))))
         self.assertTrue(all(source and source.strip() for source in sources))

@@ -1,7 +1,7 @@
 -- Central balance sheet. All prices are in-match gold, not Robux.
 local Config = {}
 
-Config.Version = "0.1.0"
+Config.Version = "0.1.1"
 Config.Title = "РУБЕЖ"
 Config.MaxPlayers = 4
 Config.MaxWaves = 20

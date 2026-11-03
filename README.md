@@ -7,7 +7,7 @@
 **Кооперативная tower defense для Roblox на 1–4 игроков**
 
 [![CI](https://github.com/cherdakmd/CHRDK_TD_ROBLOX/actions/workflows/ci.yml/badge.svg)](https://github.com/cherdakmd/CHRDK_TD_ROBLOX/actions/workflows/ci.yml)
-![Version](https://img.shields.io/badge/version-0.1.0-7eefc1)
+![Version](https://img.shields.io/badge/version-0.1.1-7eefc1)
 ![Luau](https://img.shields.io/badge/Luau-Roblox-7ed5ff)
 ![Players](https://img.shields.io/badge/players-1–4-ffd278)
 
@@ -15,7 +15,7 @@
 
 </div>
 
-> **Статус: играбельный прототип v0.1.0.** Основной игровой цикл собран и покрыт headless-тестами. Перед публикацией опыта обязательно пройдите [ручной чек-лист в Roblox Studio](docs/STUDIO_CHECKLIST_RU.md): мультиплеер, мобильный UI и облачные сохранения.
+> **Статус: играбельный прототип v0.1.1.** Основной игровой цикл собран и покрыт headless-тестами. Перед публикацией опыта обязательно пройдите [ручной чек-лист в Roblox Studio](docs/STUDIO_CHECKLIST_RU.md): мультиплеер, мобильный UI и облачные сохранения.
 
 Одна база. Общая оборона. Игроки строят башни на общих площадках, улучшают свои башни, комбинируют урон и замедление и переживают **20 волн** с боссами. Интерфейс на русском. Карта, модели, враги и HUD создаются кодом — без внешних моделей и платных ассетов.
 

@@ -1,4 +1,5 @@
 -- All gameplay decisions stay on the server. This script is presentation + intent only.
+print("[РУБЕЖ] client script started")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
@@ -12,14 +13,21 @@ local Camera = require(Controllers:WaitForChild("Camera"))
 local Effects = require(Controllers:WaitForChild("Effects"))
 local UI = require(Controllers:WaitForChild("UI"))
 
-local remotes = ReplicatedStorage:WaitForChild("TD_Remotes")
-local StateRemote = remotes:WaitForChild("State")
-local ActionRemote = remotes:WaitForChild("Action")
-local EffectsRemote = remotes:WaitForChild("Effects")
-local NoticeRemote = remotes:WaitForChild("Notice")
-local mapRoot = workspace:WaitForChild("TD_Map")
-local padsFolder = mapRoot:WaitForChild("Pads")
-local enemyFolder = mapRoot:WaitForChild("Enemies")
+-- Show the HUD before waiting for the server so a startup failure is visible.
+local actions = {}
+local hud = UI.new(actions)
+local state, selectedPad, pendingType, targeting = nil, nil, nil, false
+local lastPhase = nil
+
+local function failStartup(message)
+	warn("[РУБЕЖ] ", message)
+	hud.loadingText.Text = message
+	hud.loading.Visible = true
+end
+ReplicatedStorage:GetAttributeChangedSignal("TD_InitError"):Connect(function()
+	local err = ReplicatedStorage:GetAttribute("TD_InitError")
+	if err then failStartup("Ошибка сервера: " .. tostring(err) .. "\nОткройте View → Output и пришлите красный текст.") end
+end)
 
 for _, coreGui in ipairs({ Enum.CoreGuiType.Health, Enum.CoreGuiType.Backpack, Enum.CoreGuiType.PlayerList }) do
 	pcall(function() StarterGui:SetCoreGuiEnabled(coreGui, false) end)
@@ -29,12 +37,32 @@ task.spawn(function()
 	if playerModule then pcall(function() require(playerModule):GetControls():Disable() end) end
 end)
 
-Camera:Init()
-Effects:Init()
-local state, selectedPad, pendingType, targeting = nil, nil, nil, false
-local lastPhase = nil
-local actions = {}
-local hud = UI.new(actions)
+local cameraOk, cameraErr = pcall(function() Camera:Init() end)
+if not cameraOk then warn("[РУБЕЖ] Camera init: ", cameraErr) end
+pcall(function() Effects:Init() end)
+
+hud.loadingText.Text = "Ждём сервер и карту…"
+local remotes = ReplicatedStorage:WaitForChild("TD_Remotes", 20)
+if not remotes then
+	failStartup("Сервер не создал RemoteEvents за 20 секунд.\nОткройте View → Output и пришлите красный текст.")
+	return
+end
+local StateRemote = remotes:WaitForChild("State", 10)
+local ActionRemote = remotes:WaitForChild("Action", 10)
+local EffectsRemote = remotes:WaitForChild("Effects", 10)
+local NoticeRemote = remotes:WaitForChild("Notice", 10)
+if not (StateRemote and ActionRemote and EffectsRemote and NoticeRemote) then
+	failStartup("Сервер не завершил создание RemoteEvents.\nОткройте View → Output и пришлите красный текст.")
+	return
+end
+local mapRoot = workspace:WaitForChild("TD_Map", 20)
+if not mapRoot then
+	local err = ReplicatedStorage:GetAttribute("TD_InitError")
+	failStartup(err and ("Ошибка карты: " .. tostring(err)) or "Карта не появилась за 20 секунд.\nОткройте View → Output и пришлите красный текст.")
+	return
+end
+local padsFolder = mapRoot:WaitForChild("Pads")
+local enemyFolder = mapRoot:WaitForChild("Enemies")
 
 local localFolder = Instance.new("Folder"); localFolder.Name = "TD_Selection"; localFolder.Parent = workspace
 local function indicator(name, radius, color, transparency)

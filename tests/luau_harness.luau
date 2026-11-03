@@ -168,6 +168,7 @@ function methods:SetAttribute(name, value) propsOf(self).Attributes[name] = valu
 function methods:GetAttribute(name) return propsOf(self).Attributes[name] end
 function methods:GetAttributes() return table.clone(propsOf(self).Attributes) end
 function methods:GetPropertyChangedSignal(name) local key = "Property:" .. name; local signals = propsOf(self).Signals; if not signals[key] then signals[key] = signal() end; return signals[key] end
+function methods:GetAttributeChangedSignal(name) local key = "Attribute:" .. name; local signals = propsOf(self).Signals; if not signals[key] then signals[key] = signal() end; return signals[key] end
 function methods:ClearAllChildren() for _, child in ipairs(self:GetChildren()) do child:Destroy() end end
 function methods:Destroy()
 	self:ClearAllChildren()

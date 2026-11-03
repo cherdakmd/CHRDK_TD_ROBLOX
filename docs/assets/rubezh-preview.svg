@@ -30,6 +30,6 @@
     <path d="M 837.8 160.2 l 10 7 l -10 7" fill="none" stroke="#ffb1a7" stroke-width="3"/>
     <circle cx="1291.8" cy="259.5" r="23" fill="#173d40" stroke="#7eefc1" stroke-width="3"/>
     <path d="M 1291.8 244.5 l 11 15 l -11 15 l -11 -15 Z" fill="#a5ffe0"/>
-    <text x="1070" y="520" text-anchor="middle" font-size="12" letter-spacing="2" fill="#9eb9c2">СХЕМА КАРТЫ · НЕ СКРИНШОТ · v0.1.0</text>
+    <text x="1070" y="520" text-anchor="middle" font-size="12" letter-spacing="2" fill="#9eb9c2">СХЕМА КАРТЫ · НЕ СКРИНШОТ · v0.1.1</text>
   </g>
 </svg>
