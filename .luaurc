@@ -1,0 +1,4 @@
+{
+  "languageMode": "nonstrict",
+  "lint": { "LocalUnused": true, "LocalShadow": true, "ImportUnused": true, "UnreachableCode": true }
+}

@@ -1,0 +1,2639 @@
+<?xml version='1.0' encoding='utf-8'?>
+<roblox version="4" xmlns:xmime="http://www.roblox.com/2005/5/xmlmime">
+  <Item class="DataModel" referent="RBX0">
+    <Properties>
+      <string name="Name">CHRDK — РУБЕЖ</string>
+    </Properties>
+    <Item class="Workspace" referent="RBX1">
+      <Properties>
+        <string name="Name">Workspace</string>
+        <bool name="FilteringEnabled">true</bool>
+        <bool name="StreamingEnabled">false</bool>
+      </Properties>
+    </Item>
+    <Item class="Players" referent="RBX2">
+      <Properties>
+        <string name="Name">Players</string>
+      </Properties>
+    </Item>
+    <Item class="Lighting" referent="RBX3">
+      <Properties>
+        <string name="Name">Lighting</string>
+        <float name="ClockTime">14.5</float>
+        <float name="Brightness">2.3</float>
+        <bool name="GlobalShadows">true</bool>
+      </Properties>
+    </Item>
+    <Item class="ReplicatedStorage" referent="RBX4">
+      <Properties>
+        <string name="Name">ReplicatedStorage</string>
+      </Properties>
+      <Item class="Folder" referent="RBX5">
+        <Properties>
+          <string name="Name">Shared</string>
+        </Properties>
+        <Item class="ModuleScript" referent="RBX6">
+          <Properties>
+            <string name="Name">Config</string>
+            <ProtectedString name="Source">-- Central balance sheet. All prices are in-match gold, not Robux.
+local Config = {}
+
+Config.Version = "0.1.0"
+Config.Title = "РУБЕЖ"
+Config.MaxPlayers = 4
+Config.MaxWaves = 20
+Config.StartGold = 600
+Config.LobbySeconds = 45
+Config.ReadySeconds = 6
+Config.IntermissionSeconds = 22
+Config.ResultsSeconds = 30
+Config.SimulationRate = 20
+Config.StateRate = 5
+Config.ActionInterval = 0.12
+Config.SellRefund = 0.70
+Config.MaxTowers = 18
+
+Config.Difficulties = {
+	Normal = { label = "Обычный", coreHP = 30, health = 1, reward = 1, xp = 1 },
+	Hard = { label = "Испытание", coreHP = 20, health = 1.35, reward = 1.15, xp = 1.5 },
+}
+
+Config.Map = {
+	Scale = 0.85,
+	Size = Vector3.new(174, 4, 112),
+	Center = Vector3.new(0, 0, -3),
+	RoadWidth = 8,
+	PadRadius = 3.6,
+	-- Orthogonal path, in unscaled map coordinates.
+	Points = {
+		{ -84, -44 }, { -54, -44 }, { -54, 8 }, { -20, 8 },
+		{ -20, -34 }, { 20, -34 }, { 20, 32 }, { 58, 32 },
+		{ 58, -8 }, { 82, -8 },
+	},
+	Pads = {
+		{ -70, -29 }, { -41, -31 }, { -69, -8 }, { -39, -7 },
+		{ -38, 23 }, { -6, 22 }, { -5, -8 }, { -5, -48 },
+		{ 6, -20 }, { 35, -21 }, { 6, 2 }, { 35, 13 },
+		{ 42, 46 }, { 72, 18 }, { 44, 17 }, { 73, -24 },
+		{ 84, 8 }, { -82, -57 },
+	},
+}
+
+Config.TowerOrder = { "Sentry", "Cannon", "Frost", "Tesla" }
+Config.Towers = {
+	Sentry = {
+		name = "Страж", short = "СТРАЖ", role = "Скорострельная",
+		description = "Надёжная основа обороны. Быстро поражает наземные и воздушные цели.",
+		color = Color3.fromRGB(111, 224, 164), cost = 160,
+		damage = 11, interval = 0.38, range = 24, air = true,
+		upgradeCosts = { 130, 250, 430 },
+		damageScale = { 1, 1.65, 2.7, 4.3 },
+		rangeGain = 2, cooldownScale = { 1, 0.92, 0.84, 0.74 },
+	},
+	Cannon = {
+		name = "Мортира", short = "МОРТИРА", role = "Урон по площади",
+		description = "Взрыв радиусом 7 studs. Против групп наземных врагов. Не атакует воздух.",
+		color = Color3.fromRGB(255, 176, 89), cost = 280,
+		damage = 48, interval = 1.8, range = 31, air = false,
+		splash = 7, upgradeCosts = { 210, 390, 650 },
+		damageScale = { 1, 1.65, 2.7, 4.2 },
+		rangeGain = 2, cooldownScale = { 1, 0.94, 0.88, 0.8 },
+	},
+	Frost = {
+		name = "Криомант", short = "КРИОМАНТ", role = "Замедление",
+		description = "Замедляет цель на 48% на 1,8 с. Работает по воздуху. Боссы сопротивляются.",
+		color = Color3.fromRGB(107, 218, 255), cost = 240,
+		damage = 8, interval = 0.75, range = 23, air = true,
+		slow = 0.52, slowTime = 1.8, upgradeCosts = { 170, 310, 520 },
+		damageScale = { 1, 1.7, 2.8, 4.4 },
+		rangeGain = 2, cooldownScale = { 1, 0.94, 0.88, 0.8 },
+	},
+	Tesla = {
+		name = "Тесла", short = "ТЕСЛА", role = "Цепная молния",
+		description = "Молния перескакивает на 3 соседей. Каждый следующий удар слабее на 22%.",
+		color = Color3.fromRGB(184, 157, 255), cost = 360,
+		damage = 30, interval = 1.0, range = 24, air = true,
+		chains = 3, chainRange = 10, upgradeCosts = { 260, 460, 760 },
+		damageScale = { 1, 1.65, 2.75, 4.4 },
+		rangeGain = 1.5, cooldownScale = { 1, 0.93, 0.86, 0.76 },
+	},
+}
+
+Config.Enemies = {
+	Scout = { name = "Разведчик", hp = 52, speed = 8.5, bounty = 10, coreDamage = 1, armor = 0, color = Color3.fromRGB(236, 112, 106), size = 1 },
+	Runner = { name = "Бегун", hp = 38, speed = 14, bounty = 9, coreDamage = 1, armor = 0, color = Color3.fromRGB(255, 199, 93), size = 0.8 },
+	Brute = { name = "Громила", hp = 185, speed = 5.6, bounty = 22, coreDamage = 3, armor = 2, color = Color3.fromRGB(179, 100, 129), size = 1.45 },
+	Shield = { name = "Броненосец", hp = 125, speed = 7.2, bounty = 17, coreDamage = 2, armor = 6, color = Color3.fromRGB(139, 158, 181), size = 1.15 },
+	Wisp = { name = "Призрак", hp = 78, speed = 9.5, bounty = 15, coreDamage = 1, armor = 0, flying = true, color = Color3.fromRGB(172, 151, 244), size = 0.95 },
+	Boss = { name = "Разрушитель", hp = 1450, speed = 4.7, bounty = 180, coreDamage = 10, armor = 5, boss = true, slowResist = 0.5, color = Color3.fromRGB(226, 76, 93), size = 2.35 },
+}
+
+Config.Abilities = {
+	Meteor = { name = "Метеор", cooldown = 45, radius = 15, damage = 180, waveDamage = 18, color = Color3.fromRGB(255, 155, 82), key = "Q" },
+	Freeze = { name = "Стужа", cooldown = 40, duration = 5, slow = 0.25, color = Color3.fromRGB(118, 224, 255), key = "E" },
+}
+
+Config.Priorities = { "First", "Strong", "Near" }
+Config.PriorityLabels = { First = "Первый", Strong = "Сильный", Near = "Ближний" }
+
+function Config.Stats(towerType, level)
+	local def = Config.Towers[towerType]
+	if not def or level &lt; 1 or level &gt; 4 then return nil end
+	return {
+		damage = def.damage * def.damageScale[level],
+		interval = def.interval * def.cooldownScale[level],
+		range = def.range + def.rangeGain * (level - 1),
+		splash = def.splash and def.splash + (level - 1) * 0.6 or nil,
+		chains = def.chains and def.chains + math.floor((level - 1) / 2) or nil,
+		slowTime = def.slowTime and def.slowTime + (level - 1) * 0.25 or nil,
+	}
+end
+
+function Config.HealthScale(wave)
+	return 1 + (wave - 1) * 0.14 + (wave - 1) ^ 2 * 0.006
+end
+
+function Config.PartyHealthScale(playerCount)
+	return 1 + math.max(0, playerCount - 1) * 0.42
+end
+
+function Config.Level(xp)
+	return 1 + math.floor(math.max(0, xp) / 250)
+end
+
+return Config
+</ProtectedString>
+          </Properties>
+        </Item>
+        <Item class="ModuleScript" referent="RBX7">
+          <Properties>
+            <string name="Name">Economy</string>
+            <ProtectedString name="Source">local Config = require(script.Parent.Config)
+local Economy = {}
+
+function Economy.UpgradeCost(towerType, level)
+	local def = Config.Towers[towerType]
+	if not def or level &lt; 1 or level &gt;= 4 then return nil end
+	return def.upgradeCosts[level]
+end
+
+function Economy.Refund(invested)
+	return math.floor(math.max(0, invested) * Config.SellRefund)
+end
+
+function Economy.WaveReward(wave, gold, difficulty)
+	local multiplier = Config.Difficulties[difficulty].reward
+	return math.floor((80 + wave * 12 + math.min(90, gold * 0.03)) * multiplier)
+end
+
+-- Split the exact bounty, never duplicate it. Remainder goes to the final hit.
+function Economy.SplitBounty(bounty, damageByPlayer, killerId)
+	local total = 0
+	for _, damage in pairs(damageByPlayer) do total += math.max(0, damage) end
+	local result, assigned = {}, 0
+	if total &lt;= 0 then
+		if killerId then result[killerId] = bounty end
+		return result
+	end
+	for playerId, damage in pairs(damageByPlayer) do
+		local share = math.floor(bounty * math.max(0, damage) / total)
+		if share &gt; 0 then result[playerId] = share end
+		assigned += share
+	end
+	if killerId and bounty &gt; assigned then
+		result[killerId] = (result[killerId] or 0) + bounty - assigned
+	end
+	return result
+end
+
+function Economy.VoteReached(votes, playerCount, predicate)
+	local count = 0
+	for _, vote in pairs(votes) do
+		if predicate(vote) then count += 1 end
+	end
+	return playerCount &gt; 0 and count &gt; playerCount / 2
+end
+
+function Economy.CatchupGold(wavesCleared, playerCount)
+	return Config.StartGold + math.max(0, wavesCleared) * 45 + math.max(0, playerCount - 1) * 35
+end
+
+return Economy
+</ProtectedString>
+          </Properties>
+        </Item>
+        <Item class="ModuleScript" referent="RBX8">
+          <Properties>
+            <string name="Name">Format</string>
+            <ProtectedString name="Source">local Format = {}
+
+function Format.Number(value)
+	local text = tostring(math.floor(value or 0))
+	local result = text
+	while true do
+		local nextText = string.gsub(result, "^(-?%d+)(%d%d%d)", "%1 %2")
+		result = nextText
+		if nextText == text then break end
+		text = nextText
+	end
+	return result
+end
+
+function Format.Time(seconds)
+	seconds = math.max(0, math.ceil(seconds or 0))
+	return string.format("%02d:%02d", math.floor(seconds / 60), seconds % 60)
+end
+
+function Format.Roman(level)
+	return ({ "I", "II", "III", "IV" })[level] or "I"
+end
+
+return Format
+</ProtectedString>
+          </Properties>
+        </Item>
+        <Item class="ModuleScript" referent="RBX9">
+          <Properties>
+            <string name="Name">Path</string>
+            <ProtectedString name="Source">-- Shared by map construction, server movement and client minimap.
+local Config = require(script.Parent.Config)
+local Path = {}
+Path.Points = {}
+Path.Segments = {}
+Path.Length = 0
+
+for _, point in ipairs(Config.Map.Points) do
+	table.insert(Path.Points, { x = point[1] * Config.Map.Scale, z = point[2] * Config.Map.Scale })
+end
+for index = 1, #Path.Points - 1 do
+	local a, b = Path.Points[index], Path.Points[index + 1]
+	local length = math.abs(b.x - a.x) + math.abs(b.z - a.z)
+	table.insert(Path.Segments, { a = a, b = b, start = Path.Length, length = length })
+	Path.Length += length
+end
+
+function Path.Sample(distance)
+	distance = math.clamp(distance, 0, Path.Length)
+	for _, segment in ipairs(Path.Segments) do
+		if distance &lt;= segment.start + segment.length then
+			local alpha = (distance - segment.start) / segment.length
+			local dx, dz = segment.b.x - segment.a.x, segment.b.z - segment.a.z
+			return segment.a.x + dx * alpha, segment.a.z + dz * alpha, math.atan2(dx, dz)
+		end
+	end
+	local last = Path.Points[#Path.Points]
+	return last.x, last.z, 0
+end
+
+function Path.DistanceToRoad(x, z)
+	local nearest = math.huge
+	for _, segment in ipairs(Path.Segments) do
+		local px = math.clamp(x, math.min(segment.a.x, segment.b.x), math.max(segment.a.x, segment.b.x))
+		local pz = math.clamp(z, math.min(segment.a.z, segment.b.z), math.max(segment.a.z, segment.b.z))
+		nearest = math.min(nearest, math.sqrt((x - px)^2 + ( z - pz)^2))
+	end
+	return nearest
+end
+
+return Path
+</ProtectedString>
+          </Properties>
+        </Item>
+        <Item class="ModuleScript" referent="RBX10">
+          <Properties>
+            <string name="Name">Waves</string>
+            <ProtectedString name="Source">local Config = require(script.Parent.Config)
+local Waves = {}
+
+-- Deterministic plans make tests and the wave preview agree with the server.
+function Waves.Plan(wave)
+	assert(wave &gt;= 1 and wave &lt;= Config.MaxWaves and wave == math.floor(wave), "Invalid wave")
+	local events = {}
+	local time = 0.7
+	local count = 6 + wave * 2
+	local gap = math.max(0.42, 0.95 - wave * 0.018)
+	for index = 1, count do
+		local kind = "Scout"
+		if wave &gt;= 2 and index % 4 == 0 then kind = "Runner" end
+		if wave &gt;= 3 and index % 6 == 0 then kind = "Brute" end
+		if wave &gt;= 6 and index % 5 == 0 then kind = "Shield" end
+		if wave &gt;= 8 and index % 7 == 0 then kind = "Wisp" end
+		if wave &gt;= 12 and index % 11 == 0 then kind = "Wisp" end
+		table.insert(events, { at = time, kind = kind })
+		time += gap
+		if index % 8 == 0 then time += 1.5 end
+	end
+	if wave % 5 == 0 then
+		time += 2
+		table.insert(events, { at = time, kind = "Boss", final = wave == Config.MaxWaves })
+	end
+	local counts = {}
+	for _, event in ipairs(events) do
+		counts[event.kind] = (counts[event.kind] or 0) + 1
+	end
+	return { events = events, total = #events, counts = counts, duration = time, boss = wave % 5 == 0 }
+end
+
+function Waves.Description(wave)
+	if wave == 20 then return "Финальный босс + эскорт" end
+	if wave % 5 == 0 then return "Босс + эскорт" end
+	if wave &gt;= 8 then return "Пехота, броня и воздух" end
+	if wave &gt;= 6 then return "Броненосцы подходят" end
+	if wave &gt;= 3 then return "Громилы в строю" end
+	if wave &gt;= 2 then return "Быстрые бегуны" end
+	return "Разведчики"
+end
+
+return Waves
+</ProtectedString>
+          </Properties>
+        </Item>
+      </Item>
+    </Item>
+    <Item class="ServerScriptService" referent="RBX11">
+      <Properties>
+        <string name="Name">ServerScriptService</string>
+      </Properties>
+      <Item class="Folder" referent="RBX12">
+        <Properties>
+          <string name="Name">Server</string>
+        </Properties>
+        <Item class="Script" referent="RBX13">
+          <Properties>
+            <string name="Name">Main</string>
+            <ProtectedString name="Source">-- CHRDK / РУБЕЖ — authoritative cooperative tower defense server.
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local Lighting = game:GetService("Lighting")
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Config = require(Shared:WaitForChild("Config"))
+local Waves = require(Shared:WaitForChild("Waves"))
+local Economy = require(Shared:WaitForChild("Economy"))
+local Services = script.Parent:WaitForChild("Services")
+local Map = require(Services:WaitForChild("Map"))
+local Profiles = require(Services:WaitForChild("Profiles"))
+local Enemies = require(Services:WaitForChild("Enemies"))
+local Towers = require(Services:WaitForChild("Towers"))
+
+Lighting.ClockTime = 14.5
+Lighting.Brightness = 2.3
+Lighting.Ambient = Color3.fromRGB(105, 126, 137)
+Lighting.OutdoorAmbient = Color3.fromRGB(143, 157, 162)
+Lighting.GlobalShadows = true
+Lighting.FogEnd = 650
+Lighting.FogColor = Color3.fromRGB(113, 161, 172)
+pcall(function() workspace.StreamingEnabled = false end)
+
+local remotes = Instance.new("Folder"); remotes.Name = "TD_Remotes"; remotes.Parent = ReplicatedStorage
+local function remote(name)
+	local event = Instance.new("RemoteEvent"); event.Name = name; event.Parent = remotes; return event
+end
+local StateRemote, ActionRemote, EffectsRemote, NoticeRemote = remote("State"), remote("Action"), remote("Effects"), remote("Notice")
+local mapRoot = Map.Build()
+Enemies:Init(mapRoot:WaitForChild("Enemies"))
+Towers:Init(mapRoot:WaitForChild("Towers"))
+Profiles:Init()
+
+local match = {
+	phase = "Lobby", wave = 0, wavesCleared = 0, coreHP = 30, coreMax = 30,
+	difficulty = "Normal", nextAt = os.clock() + Config.LobbySeconds,
+	speed = 1, clock = 0, matchId = 0, matchStarted = 0,
+	plan = Waves.Plan(1), spawnIndex = 1, waveElapsed = 0,
+	speedVotes = {}, skipVotes = {}, replayVotes = {},
+	abilities = { Meteor = 0, Freeze = 0 }, result = nil, readyAccelerated = false,
+}
+local roundPlayers = {}
+local effects = {}
+local running = true
+
+local function now() return os.clock() end
+local function notice(player, text, tone)
+	if player.Parent == Players then NoticeRemote:FireClient(player, text, tone or "info") end
+end
+local function announce(text, tone) NoticeRemote:FireAllClients(text, tone or "info") end
+local function emit(effect)
+	if #effects &lt; 180 then table.insert(effects, effect) end
+end
+local function countPlayers()
+	local count = 0
+	for _ in pairs(roundPlayers) do count += 1 end
+	return count
+end
+local function rule(condition, message)
+	if not condition then error({ feedback = message }, 0) end
+end
+local function validNumber(value)
+	return type(value) == "number" and value == value and math.abs(value) &lt; 1e6
+end
+local function validPad(value)
+	return validNumber(value) and value == math.floor(value) and value &gt;= 1 and value &lt;= #Config.Map.Pads
+end
+local function buildAllowed()
+	return match.phase == "Lobby" or match.phase == "Combat" or match.phase == "Intermission"
+end
+
+local function updateVotes()
+	local count = countPlayers()
+	match.speed = Economy.VoteReached(match.speedVotes, count, function(vote) return vote == 2 end) and 2 or 1
+end
+
+local function snapshot(player)
+	local list = {}
+	local readyCount = 0
+	for other, session in pairs(roundPlayers) do
+		local profile = Profiles:Get(other)
+		table.insert(list, {
+			id = other.UserId, name = other.DisplayName, level = Config.Level(profile.xp), xp = profile.xp,
+			gold = session.gold, ready = session.ready, kills = session.kills, damage = session.damage,
+			difficulty = session.difficulty, speedVote = match.speedVotes[other.UserId] or 1,
+			skipVote = match.skipVotes[other.UserId] == true, replayVote = match.replayVotes[other.UserId] == true,
+			saveStatus = Profiles.Sessions[other] and Profiles.Sessions[other].status or "loading",
+		})
+		if session.ready then readyCount += 1 end
+	end
+	table.sort(list, function(a, b) return a.id &lt; b.id end)
+	local alive = Enemies:Count()
+	local remaining = match.phase == "Combat" and alive + math.max(0, #match.plan.events - match.spawnIndex + 1) or 0
+	local previewWave = match.phase == "Intermission" and math.min(20, match.wave + 1) or math.max(1, match.wave)
+	local preview = match.phase == "Intermission" and Waves.Plan(previewWave) or match.plan
+	local cooldowns = {}
+	for kind, readyAt in pairs(match.abilities) do cooldowns[kind] = math.max(0, (readyAt - match.clock) / match.speed) end
+	local mine = roundPlayers[player]
+	return {
+		phase = match.phase, wave = match.wave, wavesCleared = match.wavesCleared, maxWaves = Config.MaxWaves,
+		coreHP = match.coreHP, coreMax = match.coreMax, alive = alive, remaining = remaining,
+		total = match.plan.total, progress = match.phase == "Combat" and 1 - remaining / math.max(1, match.plan.total) or 0,
+		nextIn = math.max(0, match.nextAt - now()), speed = match.speed, difficulty = match.difficulty,
+		players = list, gold = mine and mine.gold or 0, readyCount = readyCount,
+		cooldowns = cooldowns, previewWave = previewWave, preview = preview.counts,
+		result = match.result, matchId = match.matchId, version = Config.Version,
+	}
+end
+
+local function broadcast()
+	for player in pairs(roundPlayers) do StateRemote:FireClient(player, snapshot(player)) end
+end
+
+local function resetLobby()
+	Enemies:Clear(); Towers:Clear()
+	match.phase = "Lobby"; match.wave = 0; match.wavesCleared = 0
+	match.coreHP = Config.Difficulties.Normal.coreHP; match.coreMax = match.coreHP
+	match.nextAt = now() + Config.LobbySeconds; match.clock = 0; match.speed = 1
+	match.plan = Waves.Plan(1); match.spawnIndex = 1; match.waveElapsed = 0
+	match.speedVotes = {}; match.skipVotes = {}; match.replayVotes = {}
+	match.abilities = { Meteor = 0, Freeze = 0 }; match.result = nil; match.readyAccelerated = false
+	for _, session in pairs(roundPlayers) do
+		session.gold = Config.StartGold; session.ready = false; session.kills = 0; session.damage = 0
+	end
+	Map.UpdateCore(match.coreHP, match.coreMax)
+	announce("Новый матч. Стройте оборону и голосуйте за готовность.", "info")
+	broadcast()
+end
+
+local function startWave(wave)
+	match.wave = wave; match.phase = "Combat"; match.plan = Waves.Plan(wave)
+	match.spawnIndex = 1; match.waveElapsed = 0; match.nextAt = 0; match.skipVotes = {}
+	updateVotes()
+	if match.plan.boss then announce(wave == 20 and "ФИНАЛ: Разрушитель приближается!" or "Волна " .. wave .. ": замечен босс!", "danger")
+	else announce("Волна " .. wave .. " / " .. Config.MaxWaves .. " — " .. Waves.Description(wave), "info") end
+	broadcast()
+end
+
+local function startMatch()
+	if countPlayers() == 0 then match.nextAt = now() + Config.LobbySeconds; return end
+	local hardVotes = 0
+	for _, session in pairs(roundPlayers) do if session.difficulty == "Hard" then hardVotes += 1 end end
+	match.difficulty = hardVotes &gt; countPlayers() / 2 and "Hard" or "Normal"
+	match.coreMax = Config.Difficulties[match.difficulty].coreHP; match.coreHP = match.coreMax
+	match.matchId += 1; match.matchStarted = now(); match.clock = 0
+	match.abilities = { Meteor = 0, Freeze = 0 }; match.replayVotes = {}
+	for player, session in pairs(roundPlayers) do
+		session.kills = 0; session.damage = 0
+		Profiles:Add(player, { matches = 1 })
+	end
+	Map.UpdateCore(match.coreHP, match.coreMax)
+	startWave(1)
+end
+
+local function finish(victory)
+	if match.phase ~= "Combat" then return end
+	match.phase = victory and "Victory" or "Defeat"; match.nextAt = now() + Config.ResultsSeconds
+	match.replayVotes = {}; match.result = { victory = victory, wave = match.wave, cleared = match.wavesCleared, duration = now() - match.matchStarted, coreHP = match.coreHP }
+	Enemies:Clear()
+	local multiplier = Config.Difficulties[match.difficulty].xp
+	for player in pairs(roundPlayers) do
+		Profiles:Add(player, { xp = math.floor((victory and 300 or 40) * multiplier), wins = victory and 1 or 0 })
+		task.spawn(function() Profiles:Save(player, false) end)
+	end
+	announce(victory and "Рубеж удержан! Все 20 волн отражены." or "Ядро уничтожено. Усильте оборону и попробуйте снова.", victory and "success" or "danger")
+	broadcast()
+end
+
+Enemies.OnDamage = function(playerId, actual)
+	local player = Players:GetPlayerByUserId(playerId)
+	local session = player and roundPlayers[player]
+	if session then session.damage += actual end
+end
+
+Enemies.OnKill = function(enemy, killerId, position)
+	local bounty = math.floor(enemy.def.bounty * Config.Difficulties[match.difficulty].reward)
+	local shares = Economy.SplitBounty(bounty, enemy.damageByPlayer, killerId)
+	for userId, amount in pairs(shares) do
+		local player = Players:GetPlayerByUserId(userId)
+		local session = player and roundPlayers[player]
+		if session then session.gold += amount end
+	end
+	if killerId then
+		local player = Players:GetPlayerByUserId(killerId)
+		local session = player and roundPlayers[player]
+		if session then session.kills += 1 end
+		if player then Profiles:Add(player, { kills = 1 }) end
+	end
+	emit({ kind = "Defeat", to = position, color = enemy.def.color, boss = enemy.def.boss })
+end
+
+local function clearWave()
+	match.wavesCleared = match.wave
+	local multiplier = Config.Difficulties[match.difficulty].xp
+	for player, session in pairs(roundPlayers) do
+		local reward = Economy.WaveReward(match.wave, session.gold, match.difficulty)
+		session.gold += reward
+		Profiles:Add(player, { xp = math.floor((20 + match.wave * 3) * multiplier) })
+		Profiles:Best(player, match.wavesCleared)
+		notice(player, "Волна отражена  +" .. reward .. " золота", "success")
+	end
+	if match.wave &gt;= Config.MaxWaves then
+		finish(true)
+	else
+		match.phase = "Intermission"; match.nextAt = now() + Config.IntermissionSeconds; match.skipVotes = {}
+		broadcast()
+	end
+end
+
+local function simulationStep(dt)
+	if match.phase == "Combat" then
+		match.clock += dt
+		match.waveElapsed += dt
+		while match.spawnIndex &lt;= #match.plan.events and match.plan.events[match.spawnIndex].at &lt;= match.waveElapsed do
+			local event = match.plan.events[match.spawnIndex]
+			Enemies:Spawn(event.kind, match.wave, countPlayers(), match.difficulty, event.final)
+			match.spawnIndex += 1
+		end
+		local leaked = Enemies:Update(dt, match.clock)
+		for _, enemy in ipairs(leaked) do
+			match.coreHP = math.max(0, match.coreHP - enemy.def.coreDamage)
+			emit({ kind = "CoreHit", to = Map.CorePosition + Vector3.new(0, 4, 0), color = Color3.fromRGB(255, 114, 102) })
+		end
+		if #leaked &gt; 0 then Map.UpdateCore(match.coreHP, match.coreMax) end
+		if match.coreHP &lt;= 0 then finish(false); return end
+		Towers:Update(dt, Enemies, emit, match.clock)
+		if match.spawnIndex &gt; #match.plan.events and Enemies:Count() == 0 then clearWave() end
+	elseif match.phase == "Intermission" then
+		match.clock += dt
+	end
+end
+
+local function ownedTower(session, padId)
+	rule(validPad(padId), "Выберите площадку на карте.")
+	local tower = Towers.ByPad[padId]
+	rule(tower ~= nil, "На этой площадке пока нет башни.")
+	rule(tower.ownerId == session.player.UserId, "Управлять этой башней может только её владелец.")
+	return tower
+end
+
+local function dispatch(player, session, kind, payload)
+	if kind == "Hello" then
+		StateRemote:FireClient(player, snapshot(player)); return
+	elseif kind == "Ready" then
+		rule(match.phase == "Lobby", "Матч уже начался.")
+		rule(type(payload.ready) == "boolean", "Некорректный голос.")
+		session.ready = payload.ready
+	elseif kind == "Difficulty" then
+		rule(match.phase == "Lobby", "Сложность выбирается до начала матча.")
+		rule(payload.value == "Normal" or payload.value == "Hard", "Неизвестная сложность.")
+		session.difficulty = payload.value; session.ready = false
+	elseif kind == "Build" then
+		rule(buildAllowed(), "Дождитесь следующего матча.")
+		rule(validPad(payload.padId), "Некорректная площадка.")
+		rule(type(payload.towerType) == "string" and Config.Towers[payload.towerType] ~= nil, "Выберите башню из списка.")
+		rule(not Towers.ByPad[payload.padId], "Площадка уже занята.")
+		local cost = Config.Towers[payload.towerType].cost
+		rule(session.gold &gt;= cost, "Недостаточно золота.")
+		session.gold -= cost
+		Towers:Build(payload.padId, payload.towerType, player)
+		emit({ kind = "Build", to = Map.Pads[payload.padId].position + Vector3.new(0, 1, 0), color = Config.Towers[payload.towerType].color })
+	elseif kind == "Upgrade" then
+		rule(buildAllowed(), "Улучшения доступны во время матча.")
+		local tower = ownedTower(session, payload.padId)
+		rule(tower.level &lt; 4, "Достигнут максимальный уровень.")
+		local cost = Economy.UpgradeCost(tower.kind, tower.level)
+		rule(session.gold &gt;= cost, "Недостаточно золота для улучшения.")
+		session.gold -= cost; tower.invested += cost; Towers:Upgrade(tower.padId)
+		emit({ kind = "Build", to = tower.position + Vector3.new(0, 2, 0), color = Config.Towers[tower.kind].color })
+	elseif kind == "Sell" then
+		rule(buildAllowed(), "Продажа доступна во время матча.")
+		local tower = ownedTower(session, payload.padId)
+		local refund = Economy.Refund(tower.invested)
+		session.gold += refund; Towers:Remove(tower.padId)
+		notice(player, "Башня продана  +" .. refund .. " золота", "info")
+	elseif kind == "Priority" then
+		local tower = ownedTower(session, payload.padId)
+		rule(table.find(Config.Priorities, payload.value) ~= nil, "Неизвестная цель.")
+		tower.priority = payload.value; Map.Pads[tower.padId].part:SetAttribute("Priority", payload.value)
+	elseif kind == "Speed" then
+		rule(match.phase == "Combat" or match.phase == "Intermission", "Скорость доступна во время матча.")
+		rule(payload.value == 1 or payload.value == 2, "Некорректная скорость.")
+		match.speedVotes[player.UserId] = payload.value; updateVotes()
+	elseif kind == "Skip" then
+		rule(match.phase == "Intermission", "Сейчас нельзя пропустить подготовку.")
+		match.skipVotes[player.UserId] = true
+		if Economy.VoteReached(match.skipVotes, countPlayers(), function(vote) return vote end) then match.nextAt = math.min(match.nextAt, now() + 2) end
+	elseif kind == "Replay" then
+		rule(match.phase == "Victory" or match.phase == "Defeat", "Матч ещё не завершён.")
+		match.replayVotes[player.UserId] = true
+		if Economy.VoteReached(match.replayVotes, countPlayers(), function(vote) return vote end) then resetLobby(); return end
+	elseif kind == "Ability" then
+		rule(match.phase == "Combat", "Способности доступны только во время волны.")
+		local def = Config.Abilities[payload.ability]
+		rule(def ~= nil, "Неизвестная способность.")
+		rule(match.clock &gt;= match.abilities[payload.ability], "Способность ещё восстанавливается.")
+		if payload.ability == "Meteor" then
+			local target = payload.target
+			rule(typeof(target) == "Vector3" and validNumber(target.X) and validNumber(target.Y) and validNumber(target.Z), "Выберите точку на карте.")
+			rule(math.abs(target.X) &lt;= 88 and math.abs(target.Z) &lt;= 58, "Цель вне карты.")
+			match.abilities.Meteor = match.clock + def.cooldown
+			local position = Vector3.new(target.X, 0.5, target.Z)
+			emit({ kind = "Meteor", to = position, color = def.color, radius = def.radius })
+			for _, enemy in ipairs(Enemies:InRadius(position, def.radius, true)) do
+				Enemies:Damage(enemy, def.damage + match.wave * def.waveDamage, player.UserId)
+			end
+		else
+			match.abilities.Freeze = match.clock + def.cooldown
+			for _, enemy in pairs(Enemies.Active) do Enemies:Slow(enemy, def.slow, def.duration, match.clock) end
+			emit({ kind = "Freeze", to = Vector3.zero, color = def.color, radius = 95 })
+		end
+		announce(player.DisplayName .. " применяет «" .. def.name .. "»", "ability")
+	else
+		rule(false, "Неизвестное действие.")
+	end
+	broadcast()
+end
+
+ActionRemote.OnServerEvent:Connect(function(player, message)
+	local session = roundPlayers[player]
+	if not session or type(message) ~= "table" or type(message.kind) ~= "string" or #message.kind &gt; 24 then return end
+	local time = now()
+	session.tokens = math.min(12, session.tokens + math.max(0, time - session.refill) / Config.ActionInterval)
+	session.refill = time
+	if session.tokens &lt; 1 then return end
+	session.tokens -= 1
+	local ok, problem = pcall(dispatch, player, session, message.kind, message)
+	if not ok then
+		if type(problem) == "table" and problem.feedback then notice(player, problem.feedback, "danger")
+		else warn("[Action] ", message.kind, ": ", problem) end
+	end
+end)
+
+local function setupCharacter(character)
+	local root = character:WaitForChild("HumanoidRootPart", 8)
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
+	if root then root.Anchored = true end
+	if humanoid then
+		humanoid.WalkSpeed = 0; humanoid.JumpPower = 0; humanoid.JumpHeight = 0
+		humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
+		humanoid.MaxHealth = 100; humanoid.Health = 100
+	end
+end
+
+local function playerAdded(player)
+	if #Players:GetPlayers() &gt; Config.MaxPlayers then
+		player:Kick("РУБЕЖ рассчитан на команду до 4 игроков. Выберите другой сервер.")
+		return
+	end
+	task.spawn(function()
+		local profile = Profiles:Load(player)
+		if player.Parent ~= Players or profile.status == "locked" then return end
+		roundPlayers[player] = {
+			player = player, gold = match.phase == "Lobby" and Config.StartGold or Economy.CatchupGold(match.wavesCleared, countPlayers() + 1),
+			ready = false, difficulty = "Normal", kills = 0, damage = 0,
+			tokens = 12, refill = now(),
+		}
+		player.CharacterAdded:Connect(setupCharacter)
+		if player.Character then task.spawn(setupCharacter, player.Character) end
+		if profile.status == "unavailable" then
+			notice(player, "Хранилище недоступно: можно играть, но прогресс этого сеанса не сохранится.", "danger")
+		elseif profile.status == "local" then
+			notice(player, "Локальный тест: прогресс сохранится только после публикации и включения DataStore.", "info")
+		end
+		broadcast()
+	end)
+end
+
+Players.PlayerAdded:Connect(playerAdded)
+for _, player in ipairs(Players:GetPlayers()) do task.spawn(playerAdded, player) end
+Players.PlayerRemoving:Connect(function(player)
+	roundPlayers[player] = nil
+	match.speedVotes[player.UserId] = nil; match.skipVotes[player.UserId] = nil; match.replayVotes[player.UserId] = nil
+	updateVotes()
+	task.spawn(function() Profiles:Save(player, true) end)
+end)
+
+local accumulator, stateAccumulator = 0, 0
+RunService.Heartbeat:Connect(function(frameDT)
+	if not running then return end
+	accumulator += math.min(frameDT, 0.25)
+	local step = 1 / Config.SimulationRate
+	local iterations = 0
+	while accumulator &gt;= step and iterations &lt; 8 do
+		accumulator -= step; iterations += 1
+		updateVotes()
+		if match.phase == "Lobby" then
+			local count = countPlayers()
+			local allReady = count &gt; 0
+			for _, session in pairs(roundPlayers) do if not session.ready then allReady = false end end
+			if count == 0 then
+				match.nextAt = now() + Config.LobbySeconds; match.readyAccelerated = false
+			elseif allReady then
+				match.nextAt = math.min(match.nextAt, now() + Config.ReadySeconds); match.readyAccelerated = true
+			elseif match.readyAccelerated then
+				match.nextAt = math.max(match.nextAt, now() + 12); match.readyAccelerated = false
+			end
+			if count &gt; 0 and now() &gt;= match.nextAt then startMatch() end
+		elseif match.phase == "Combat" or match.phase == "Intermission" then
+			simulationStep(step * match.speed)
+			if match.phase == "Intermission" and now() &gt;= match.nextAt then startWave(match.wave + 1) end
+		elseif (match.phase == "Victory" or match.phase == "Defeat") and now() &gt;= match.nextAt then
+			resetLobby()
+		end
+	end
+	if #effects &gt; 0 then
+		EffectsRemote:FireAllClients(effects)
+		effects = {}
+	end
+	stateAccumulator += frameDT
+	if stateAccumulator &gt;= 1 / Config.StateRate then stateAccumulator = 0; broadcast() end
+end)
+
+game:BindToClose(function()
+	running = false
+	Profiles:Shutdown()
+end)
+
+Map.UpdateCore(match.coreHP, match.coreMax)
+print("[РУБЕЖ] Server ready — 4-player co-op / 20 waves / v" .. Config.Version)
+</ProtectedString>
+            <bool name="Enabled">true</bool>
+          </Properties>
+        </Item>
+        <Item class="Folder" referent="RBX14">
+          <Properties>
+            <string name="Name">Services</string>
+          </Properties>
+          <Item class="ModuleScript" referent="RBX15">
+            <Properties>
+              <string name="Name">Enemies</string>
+              <ProtectedString name="Source">local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Config = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"))
+local Path = require(ReplicatedStorage.Shared:WaitForChild("Path"))
+local Models = require(script.Parent.Models)
+local Enemies = { Active = {}, nextId = 0, folder = nil }
+
+function Enemies:Init(folder)
+	self.folder = folder
+end
+
+function Enemies:Clear()
+	for _, enemy in pairs(self.Active) do
+		if enemy.model then enemy.model:Destroy() end
+	end
+	self.Active = {}
+	if self.folder then self.folder:ClearAllChildren() end
+end
+
+function Enemies:Spawn(kind, wave, playerCount, difficulty, finalBoss)
+	local def = Config.Enemies[kind]
+	assert(def, "Unknown enemy")
+	self.nextId += 1
+	local model, bar = Models.Enemy(kind, self.nextId)
+	local maxHP = math.floor(def.hp * Config.HealthScale(wave) * Config.PartyHealthScale(playerCount) * Config.Difficulties[difficulty].health * (finalBoss and 2.4 or 1))
+	local enemy = {
+		id = self.nextId, kind = kind, def = def, model = model, bar = bar,
+		hp = maxHP, maxHP = maxHP, progress = 0, speed = def.speed,
+		position = Vector3.zero, damageByPlayer = {}, totalDamage = 0,
+		slowUntil = 0, slowFactor = 1, slowed = false, dead = false,
+	}
+	self.Active[enemy.id] = enemy
+	self:Position(enemy, 0)
+	model.Parent = self.folder
+	return enemy
+end
+
+function Enemies:Position(enemy, now)
+	local x, z, angle = Path.Sample(enemy.progress)
+	local bob = enemy.def.flying and math.sin(now * 3 + enemy.id) * 0.45 or 0
+	local height = enemy.def.flying and 6 + bob or 1.6 * enemy.def.size + 0.3
+	enemy.position = Vector3.new(x, height, z)
+	enemy.model:PivotTo(CFrame.new(enemy.position) * CFrame.Angles(0, angle, 0))
+end
+
+function Enemies:Update(dt, now)
+	local leaked = {}
+	for id, enemy in pairs(self.Active) do
+		local slowed = now &lt; enemy.slowUntil
+		if slowed ~= enemy.slowed then
+			enemy.slowed = slowed
+			local body = enemy.model:FindFirstChild("Body")
+			if body then body.Color = slowed and enemy.def.color:Lerp(Color3.fromRGB(130, 228, 255), 0.65) or enemy.def.color end
+		end
+		if not slowed then enemy.slowFactor = 1 end
+		enemy.progress += enemy.speed * (slowed and enemy.slowFactor or 1) * dt
+		if enemy.progress &gt;= Path.Length then
+			enemy.dead = true
+			self.Active[id] = nil
+			enemy.model:Destroy()
+			table.insert(leaked, enemy)
+		else
+			self:Position(enemy, now)
+		end
+	end
+	return leaked
+end
+
+function Enemies:Slow(enemy, factor, duration, now)
+	if enemy.dead then return end
+	if enemy.def.slowResist then factor = 1 - (1 - factor) * (1 - enemy.def.slowResist) end
+	if now &lt; enemy.slowUntil then factor = math.min(factor, enemy.slowFactor) end
+	enemy.slowFactor = math.clamp(factor, 0.1, 1)
+	enemy.slowUntil = math.max(enemy.slowUntil, now + duration)
+end
+
+function Enemies:Damage(enemy, amount, playerId)
+	if enemy.dead or not self.Active[enemy.id] then return false end
+	local effective = math.max(1, amount - enemy.def.armor)
+	local actual = math.min(enemy.hp, effective)
+	enemy.hp -= actual
+	if playerId then
+		enemy.damageByPlayer[playerId] = (enemy.damageByPlayer[playerId] or 0) + actual
+		enemy.totalDamage += actual
+		if self.OnDamage then self.OnDamage(playerId, actual) end
+	end
+	enemy.bar.Size = UDim2.fromScale(math.max(0, enemy.hp / enemy.maxHP), 1)
+	if enemy.hp &lt;= 0 then
+		enemy.dead = true
+		self.Active[enemy.id] = nil
+		local position = enemy.position
+		enemy.model:Destroy()
+		if self.OnKill then self.OnKill(enemy, playerId, position) end
+		return true
+	end
+	return false
+end
+
+function Enemies:Candidates(position, range, canHitAir)
+	local result = {}
+	local rangeSquared = range * range
+	for _, enemy in pairs(self.Active) do
+		if not enemy.dead and (canHitAir or not enemy.def.flying) then
+			local dx, dz = enemy.position.X - position.X, enemy.position.Z - position.Z
+			local distance = dx * dx + dz * dz
+			if distance &lt;= rangeSquared then table.insert(result, { enemy = enemy, distance = distance }) end
+		end
+	end
+	return result
+end
+
+function Enemies:Choose(position, range, canHitAir, priority)
+	local best, bestScore = nil, -math.huge
+	for _, candidate in ipairs(self:Candidates(position, range, canHitAir)) do
+		local score = candidate.enemy.progress
+		if priority == "Strong" then score = candidate.enemy.hp
+		elseif priority == "Near" then score = -candidate.distance end
+		if score &gt; bestScore then best, bestScore = candidate.enemy, score end
+	end
+	return best
+end
+
+function Enemies:InRadius(position, radius, canHitAir)
+	local result = {}
+	for _, candidate in ipairs(self:Candidates(position, radius, canHitAir)) do
+		table.insert(result, candidate.enemy)
+	end
+	return result
+end
+
+function Enemies:Count()
+	local count = 0
+	for _ in pairs(self.Active) do count += 1 end
+	return count
+end
+
+return Enemies
+</ProtectedString>
+            </Properties>
+          </Item>
+          <Item class="ModuleScript" referent="RBX16">
+            <Properties>
+              <string name="Name">Map</string>
+              <ProtectedString name="Source">local Config = require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Config"))
+local Path = require(game:GetService("ReplicatedStorage").Shared:WaitForChild("Path"))
+local Map = {}
+
+local COLORS = {
+	grass = Color3.fromRGB(64, 112, 86), edge = Color3.fromRGB(45, 77, 67),
+	road = Color3.fromRGB(204, 185, 145), roadEdge = Color3.fromRGB(143, 143, 111),
+	metal = Color3.fromRGB(47, 66, 78), dark = Color3.fromRGB(29, 45, 56),
+	mint = Color3.fromRGB(115, 244, 198), stone = Color3.fromRGB(126, 151, 139),
+}
+
+local function part(parent, name, size, cframe, color, material, shape)
+	local object = Instance.new("Part")
+	object.Name = name
+	object.Size = size
+	object.CFrame = cframe
+	object.Color = color
+	object.Material = material or Enum.Material.SmoothPlastic
+	object.Anchored = true
+	object.CanCollide = false
+	object.CanTouch = false
+	object.TopSurface = Enum.SurfaceType.Smooth
+	object.BottomSurface = Enum.SurfaceType.Smooth
+	if shape then object.Shape = shape end
+	object.Parent = parent
+	return object
+end
+
+local function cylinder(parent, name, radius, height, position, color, material)
+	return part(parent, name, Vector3.new(height, radius * 2, radius * 2), CFrame.new(position) * CFrame.Angles(0, 0, math.pi / 2), color, material, Enum.PartType.Cylinder)
+end
+
+local function label(parent, text, position, color, size)
+	local gui = Instance.new("BillboardGui")
+	gui.Name = "Label"
+	gui.Size = UDim2.fromOffset(size or 190, 34)
+	local basePosition = parent:IsA("BasePart") and parent.Position or Vector3.zero
+	gui.StudsOffsetWorldSpace = position - basePosition + Vector3.new(0, 3, 0)
+	gui.MaxDistance = 260
+	gui.AlwaysOnTop = false
+	gui.Parent = parent
+	local textLabel = Instance.new("TextLabel")
+	textLabel.Size = UDim2.fromScale(1, 1)
+	textLabel.BackgroundTransparency = 1
+	textLabel.Font = Enum.Font.GothamBold
+	textLabel.TextSize = 15
+	textLabel.TextColor3 = color
+	textLabel.TextStrokeColor3 = COLORS.dark
+	textLabel.TextStrokeTransparency = 0.35
+	textLabel.Text = text
+	textLabel.Parent = gui
+	return textLabel
+end
+
+function Map.Build()
+	local old = workspace:FindFirstChild("TD_Map")
+	if old then old:Destroy() end
+	local root = Instance.new("Folder")
+	root.Name = "TD_Map"
+	root.Parent = workspace
+	local scenery = Instance.new("Folder"); scenery.Name = "Scenery"; scenery.Parent = root
+	local padsFolder = Instance.new("Folder"); padsFolder.Name = "Pads"; padsFolder.Parent = root
+	local towers = Instance.new("Folder"); towers.Name = "Towers"; towers.Parent = root
+	local enemies = Instance.new("Folder"); enemies.Name = "Enemies"; enemies.Parent = root
+	local spawn = Instance.new("SpawnLocation")
+	spawn.Name = "CommandDeck"
+	spawn.Size = Vector3.new(18, 0.6, 8)
+	spawn.CFrame = CFrame.new(0, 0.3, 43)
+	spawn.Color = COLORS.metal
+	spawn.Material = Enum.Material.Metal
+	spawn.Anchored = true
+	spawn.Neutral = true
+	spawn.Duration = 0
+	spawn.Parent = scenery
+	part(scenery, "Ocean", Vector3.new(1800, 2, 1800), CFrame.new(0, -10, 0), Color3.fromRGB(42, 85, 99), Enum.Material.SmoothPlastic)
+	part(scenery, "IslandFoundation", Vector3.new(177, 5, 115), CFrame.new(0, -4, -3), COLORS.edge)
+	part(scenery, "IslandRim", Vector3.new(176, 1.5, 114), CFrame.new(0, -1.5, -3), Color3.fromRGB(98, 132, 105))
+	local ground = part(scenery, "Grass", Config.Map.Size, CFrame.new(0, -2, -3), COLORS.grass)
+	ground.CanCollide = true
+	ground.CanQuery = false
+
+	-- Road and rounded junctions are collision-free: enemies follow the shared spline.
+	for index, segment in ipairs(Path.Segments) do
+		local a, b = segment.a, segment.b
+		local center = Vector3.new((a.x + b.x) / 2, 0.12, (a.z + b.z) / 2)
+		local horizontal = math.abs(b.x - a.x) &gt; 0
+		local size = horizontal and Vector3.new(segment.length, 0.24, Config.Map.RoadWidth) or Vector3.new(Config.Map.RoadWidth, 0.24, segment.length)
+		part(scenery, "RoadEdge" .. index, size + Vector3.new(1.2, 0, 1.2), CFrame.new(center - Vector3.new(0, 0.06, 0)), COLORS.roadEdge)
+		part(scenery, "Road" .. index, size, CFrame.new(center), COLORS.road)
+		for distance = 5, segment.length - 3, 12 do
+			local x, z, angle = Path.Sample(segment.start + distance)
+			local arrow = part(scenery, "LaneMark", Vector3.new(0.35, 0.03, 2), CFrame.new(x, 0.26, z) * CFrame.Angles(0, angle, 0), Color3.fromRGB(231, 216, 177))
+			arrow.Transparency = 0.3
+		end
+	end
+	for _, point in ipairs(Path.Points) do
+		cylinder(scenery, "RoadJoin", Config.Map.RoadWidth / 2, 0.24, Vector3.new(point.x, 0.12, point.z), COLORS.road)
+	end
+
+	Map.Pads = {}
+	for index, coordinates in ipairs(Config.Map.Pads) do
+		local position = Vector3.new(coordinates[1] * Config.Map.Scale, 0, coordinates[2] * Config.Map.Scale)
+		local pad = cylinder(padsFolder, string.format("Pad_%02d", index), Config.Map.PadRadius, 0.65, position + Vector3.new(0, 0.35, 0), COLORS.metal, Enum.Material.Metal)
+		pad.CanQuery = true
+		pad:SetAttribute("PadId", index)
+		pad:SetAttribute("OwnerId", 0)
+		pad:SetAttribute("TowerType", "")
+		pad:SetAttribute("Level", 0)
+		pad:SetAttribute("Priority", "First")
+		pad:SetAttribute("Invested", 0)
+		local top = cylinder(pad.Parent, "PadTop" .. index, Config.Map.PadRadius - 0.35, 0.1, position + Vector3.new(0, 0.72, 0), Color3.fromRGB(77, 103, 105), Enum.Material.SmoothPlastic)
+		top.CanQuery = true
+		top:SetAttribute("PadId", index)
+		local number = label(top, string.format("+  %02d", index), position + Vector3.new(0, 0.3, 0), Color3.fromRGB(183, 216, 202), 82)
+		number.TextSize = 13
+		number.TextTransparency = 0.15
+		for angle = 0, math.pi * 1.5, math.pi / 2 do
+			local offset = Vector3.new(math.cos(angle) * 3.2, 0.8, math.sin(angle) * 3.2)
+			part(padsFolder, "PadLight", Vector3.new(0.45, 0.12, 0.45), CFrame.new(position + offset), COLORS.mint, Enum.Material.Neon)
+		end
+		Map.Pads[index] = { part = pad, top = top, position = position, label = number, model = nil }
+	end
+
+	-- Entry portal.
+	local entry = Path.Points[1]
+	for _, side in ipairs({ -1, 1 }) do
+		part(scenery, "PortalPillar", Vector3.new(2.2, 9, 2.2), CFrame.new(entry.x, 4.5, entry.z + side * 5), COLORS.dark, Enum.Material.Slate)
+		part(scenery, "PortalGlow", Vector3.new(0.4, 7, 0.5), CFrame.new(entry.x + 1.2, 4.5, entry.z + side * 5), Color3.fromRGB(255, 115, 110), Enum.Material.Neon)
+	end
+	part(scenery, "PortalLintel", Vector3.new(2.5, 2, 12), CFrame.new(entry.x, 9, entry.z), COLORS.dark)
+	label(spawn, "ВТОРЖЕНИЕ  →", Vector3.new(entry.x, 11, entry.z), Color3.fromRGB(255, 170, 153), 200)
+
+	-- The shared core and its health readout.
+	local endpoint = Path.Points[#Path.Points]
+	Map.CorePosition = Vector3.new(endpoint.x, 0, endpoint.z)
+	cylinder(scenery, "CoreBase", 6.5, 1.2, Map.CorePosition + Vector3.new(0, 0.6, 0), COLORS.dark, Enum.Material.Metal)
+	cylinder(scenery, "CoreRing", 5.4, 0.3, Map.CorePosition + Vector3.new(0, 1.35, 0), COLORS.mint, Enum.Material.Neon)
+	Map.Core = part(scenery, "CoreCrystal", Vector3.new(4, 6, 4), CFrame.new(Map.CorePosition + Vector3.new(0, 5, 0)) * CFrame.Angles(0, math.pi / 4, math.pi / 8), COLORS.mint, Enum.Material.Neon)
+	local light = Instance.new("PointLight"); light.Color = COLORS.mint; light.Range = 20; light.Brightness = 1.5; light.Parent = Map.Core
+	Map.CoreLabel = label(Map.Core, "ЯДРО  30 / 30", Map.CorePosition + Vector3.new(0, 10, 0), Color3.fromRGB(183, 255, 225), 210)
+
+	-- Deterministic decoration avoids both the road and every building pad.
+	local random = Random.new(7319)
+	local trees = 0
+	for _ = 1, 450 do
+		if trees &gt;= 48 then break end
+		local x, z = random:NextNumber(-82, 82), random:NextNumber(-53, 49)
+		local clear = Path.DistanceToRoad(x, z) &gt; 9 and math.sqrt((x - endpoint.x)^2 + ( z - endpoint.z)^2) &gt; 12
+		clear = clear and not (math.abs(x) &lt; 14 and z &gt; 35)
+		for _, pad in ipairs(Map.Pads) do
+			if (pad.position - Vector3.new(x, 0, z)).Magnitude &lt; 7 then clear = false end
+		end
+		if clear then
+			trees += 1
+			local height = random:NextNumber(5, 9)
+			part(scenery, "Trunk", Vector3.new(0.9, height * 0.6, 0.9), CFrame.new(x, height * 0.3, z), Color3.fromRGB(99, 91, 70))
+			for layer = 0, 2 do
+				local width = (4.8 - layer * 1.1) * height / 7
+				part(scenery, "Pine", Vector3.new(width, width, width), CFrame.new(x, height * 0.48 + layer * height * 0.19, z) * CFrame.Angles(0, math.pi / 4 + layer * 0.2, math.pi / 4), Color3.fromRGB(40 + layer * 7, 91 + layer * 9, 74 + layer * 5))
+			end
+		end
+	end
+	for _ = 1, 35 do
+		local x, z = random:NextNumber(-81, 81), random:NextNumber(-51, 48)
+		local clear = Path.DistanceToRoad(x, z) &gt; 7 and not (math.abs(x) &lt; 14 and z &gt; 35)
+		for _, pad in ipairs(Map.Pads) do
+			if math.sqrt((pad.position.X - x) ^ 2 + (pad.position.Z - z) ^ 2) &lt; 6 then clear = false end
+		end
+		if clear then
+			local size = random:NextNumber(0.8, 2.2)
+			part(scenery, "Rock", Vector3.new(size * 1.5, size, size), CFrame.new(x, size / 2, z) * CFrame.Angles(0, random:NextNumber(0, 6), 0.15), COLORS.stone)
+		end
+	end
+	return root
+end
+
+function Map.UpdateCore(hp, maximum)
+	if Map.CoreLabel then Map.CoreLabel.Text = string.format("ЯДРО  %d / %d", hp, maximum) end
+	if Map.Core then Map.Core.Color = hp / maximum &lt; 0.3 and Color3.fromRGB(255, 122, 105) or COLORS.mint end
+end
+
+function Map.ResetPads()
+	for _, pad in ipairs(Map.Pads) do
+		if pad.model then pad.model:Destroy(); pad.model = nil end
+		pad.part:SetAttribute("OwnerId", 0)
+		pad.part:SetAttribute("TowerType", "")
+		pad.part:SetAttribute("Level", 0)
+		pad.part:SetAttribute("Priority", "First")
+		pad.part:SetAttribute("Invested", 0)
+		pad.top.Color = Color3.fromRGB(77, 103, 105)
+		pad.label.TextTransparency = 0.15
+	end
+end
+
+return Map
+</ProtectedString>
+            </Properties>
+          </Item>
+          <Item class="ModuleScript" referent="RBX17">
+            <Properties>
+              <string name="Name">Models</string>
+              <ProtectedString name="Source">local Config = require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Config"))
+local Models = {}
+local dark = Color3.fromRGB(39, 54, 66)
+local metal = Color3.fromRGB(84, 105, 116)
+
+local function part(parent, name, size, cframe, color, material, shape)
+	local p = Instance.new("Part")
+	p.Name = name; p.Size = size; p.CFrame = cframe; p.Color = color
+	p.Material = material or Enum.Material.Metal
+	p.Anchored = true; p.CanCollide = false; p.CanTouch = false; p.CanQuery = false
+	p.TopSurface = Enum.SurfaceType.Smooth; p.BottomSurface = Enum.SurfaceType.Smooth
+	if shape then p.Shape = shape end
+	p.Parent = parent
+	return p
+end
+
+local function cyl(parent, name, radius, height, offset, color, material)
+	return part(parent, name, Vector3.new(height, radius * 2, radius * 2), CFrame.new(offset) * CFrame.Angles(0, 0, math.pi / 2), color, material, Enum.PartType.Cylinder)
+end
+
+function Models.Tower(towerType, level, position, padId)
+	local def = Config.Towers[towerType]
+	local model = Instance.new("Model"); model.Name = "Tower_" .. padId
+	local origin = CFrame.new(position + Vector3.new(0, 0.85, 0))
+	local base = cyl(model, "Base", 2.65, 0.65, origin.Position + Vector3.new(0, 0.32, 0), dark)
+	model.PrimaryPart = base
+	cyl(model, "Accent", 2.3, 0.15, origin.Position + Vector3.new(0, 0.73, 0), def.color, Enum.Material.Neon)
+	cyl(model, "Pedestal", 1.35, 1.5, origin.Position + Vector3.new(0, 1.45, 0), metal)
+	local head = Instance.new("Model"); head.Name = "Head"; head.Parent = model
+	local headOrigin = origin + Vector3.new(0, 2.6, 0)
+	local pivot
+	if towerType == "Sentry" then
+		pivot = part(head, "Pivot", Vector3.new(2.7, 1.6, 2.5), headOrigin, def.color)
+		part(head, "BarrelL", Vector3.new(0.48, 0.48, 3.4), headOrigin * CFrame.new(-0.7, 0.1, 2), dark)
+		part(head, "BarrelR", Vector3.new(0.48, 0.48, 3.4), headOrigin * CFrame.new(0.7, 0.1, 2), dark)
+		part(head, "Sight", Vector3.new(0.8, 0.3, 0.6), headOrigin * CFrame.new(0, 1, 0.3), def.color, Enum.Material.Neon)
+	elseif towerType == "Cannon" then
+		pivot = part(head, "Pivot", Vector3.new(3.2, 1.9, 2.8), headOrigin, def.color)
+		local barrel = cyl(head, "Barrel", 0.85, 4.2, Vector3.new(0, 0, 0), dark)
+		barrel.CFrame = headOrigin * CFrame.new(0, 0.5, 2) * CFrame.Angles(math.pi / 2, 0, 0)
+		local muzzle = cyl(head, "Muzzle", 0.95, 0.4, Vector3.new(0, 0, 0), def.color)
+		muzzle.CFrame = headOrigin * CFrame.new(0, 0.5, 4) * CFrame.Angles(math.pi / 2, 0, 0)
+	elseif towerType == "Frost" then
+		pivot = part(head, "Pivot", Vector3.new(2, 2.8, 2), headOrigin * CFrame.Angles(0, math.pi / 4, math.pi / 7), def.color, Enum.Material.Neon)
+		for angle = 0, math.pi * 1.5, math.pi / 2 do
+			part(head, "Shard", Vector3.new(0.6, 1.8, 0.6), headOrigin * CFrame.new(math.cos(angle) * 1.8, -0.5, math.sin(angle) * 1.8) * CFrame.Angles(0.2, angle, 0.3), def.color, Enum.Material.Glass)
+		end
+	else
+		pivot = part(head, "Pivot", Vector3.new(1.8, 1.8, 1.8), headOrigin + Vector3.new(0, 1, 0), def.color, Enum.Material.Neon, Enum.PartType.Ball)
+		for height = -1, 1 do
+			cyl(head, "Coil", 1.5, 0.25, headOrigin.Position + Vector3.new(0, height * 0.7, 0), height == 0 and def.color or metal, height == 0 and Enum.Material.Neon or Enum.Material.Metal)
+		end
+	end
+	head.PrimaryPart = pivot
+	model:SetAttribute("HeadOffset", headOrigin.Position - origin.Position)
+	for rank = 1, level do
+		part(model, "Rank", Vector3.new(0.38, 0.22, 0.7), origin * CFrame.new(-0.9 + (rank - 1) * 0.6, 0.85, 1.8), Color3.fromRGB(255, 222, 134), Enum.Material.Neon)
+	end
+	local light = Instance.new("PointLight"); light.Color = def.color; light.Range = 7; light.Brightness = 0.4; light.Parent = pivot
+	model:SetAttribute("TowerType", towerType); model:SetAttribute("Level", level)
+	return model, head
+end
+
+function Models.Enemy(kind, id)
+	local def = Config.Enemies[kind]
+	local scale = def.size
+	local model = Instance.new("Model"); model.Name = "Enemy_" .. id
+	local root = part(model, "Root", Vector3.new(2, 2, 2) * scale, CFrame.new(0, 2, 0), def.color)
+	root.Transparency = 1
+	model.PrimaryPart = root
+	local body
+	if def.flying then
+		body = part(model, "Body", Vector3.new(2, 2, 2) * scale, CFrame.new(0, 0, 0), def.color, Enum.Material.Neon, Enum.PartType.Ball)
+		part(model, "WingL", Vector3.new(2.4, 0.2, 1.2) * scale, CFrame.new(-1.4 * scale, 0, 0) * CFrame.Angles(0, 0, -0.3), def.color, Enum.Material.Glass)
+		part(model, "WingR", Vector3.new(2.4, 0.2, 1.2) * scale, CFrame.new(1.4 * scale, 0, 0) * CFrame.Angles(0, 0, 0.3), def.color, Enum.Material.Glass)
+	else
+		body = part(model, "Body", Vector3.new(2.1, 2.2, 1.7) * scale, CFrame.new(0, 0, 0), def.color, Enum.Material.SmoothPlastic)
+		part(model, "Helmet", Vector3.new(2.3, 0.6, 1.9) * scale, CFrame.new(0, 1.1 * scale, 0), def.boss and dark or body.Color:Lerp(Color3.new(0, 0, 0), 0.25))
+		for _, side in ipairs({ -1, 1 }) do
+			part(model, "Foot", Vector3.new(0.7, 0.7, 1.2) * scale, CFrame.new(side * 0.65 * scale, -1.25 * scale, 0.15), dark)
+		end
+		if def.boss then
+			for _, side in ipairs({ -1, 1 }) do
+				part(model, "Horn", Vector3.new(0.6, 1.8, 0.6) * scale, CFrame.new(side * 0.85 * scale, 1.75 * scale, 0) * CFrame.Angles(0, 0, side * -0.35), Color3.fromRGB(255, 190, 129), Enum.Material.Neon)
+			end
+		end
+	end
+	part(model, "Visor", Vector3.new(1.5, 0.35, 0.12) * scale, CFrame.new(0, 0.35 * scale, 0.91 * scale), Color3.fromRGB(255, 241, 202), Enum.Material.Neon)
+	local gui = Instance.new("BillboardGui"); gui.Name = "Health"; gui.Size = UDim2.fromOffset(def.boss and 90 or 42, def.boss and 24 or 6); gui.StudsOffsetWorldSpace = Vector3.new(0, 2 * scale + 0.7, 0); gui.MaxDistance = 180; gui.Parent = root
+	local back = Instance.new("Frame"); back.Size = UDim2.fromScale(1, def.boss and 0.3 or 1); back.Position = UDim2.fromScale(0, def.boss and 0.7 or 0); back.BackgroundColor3 = dark; back.BorderSizePixel = 0; back.Parent = gui
+	local fill = Instance.new("Frame"); fill.Name = "Fill"; fill.Size = UDim2.fromScale(1, 1); fill.BackgroundColor3 = def.boss and Color3.fromRGB(255, 125, 109) or Color3.fromRGB(133, 237, 164); fill.BorderSizePixel = 0; fill.Parent = back
+	if def.boss then
+		local title = Instance.new("TextLabel"); title.Size = UDim2.fromScale(1, 0.65); title.BackgroundTransparency = 1; title.Text = def.name; title.TextColor3 = Color3.fromRGB(255, 221, 207); title.TextScaled = true; title.Font = Enum.Font.GothamBold; title.Parent = gui
+	end
+	model:SetAttribute("EnemyKind", kind)
+	return model, fill
+end
+
+return Models
+</ProtectedString>
+            </Properties>
+          </Item>
+          <Item class="ModuleScript" referent="RBX18">
+            <Properties>
+              <string name="Name">Profiles</string>
+              <ProtectedString name="Source">-- Fail-closed persistence: a failed load is never later written over real data.
+-- Only account progression is saved. Match gold and towers are intentionally temporary.
+local DataStoreService = game:GetService("DataStoreService")
+local HttpService = game:GetService("HttpService")
+local RunService = game:GetService("RunService")
+
+local STORE_NAME = "CHRDK_TD_Profile_v1"
+local LOCK_SECONDS = 180
+local SAVE_EVERY = 60
+local Profiles = { Sessions = {}, store = nil, running = true }
+
+local function defaults()
+	return { schema = 1, xp = 0, wins = 0, bestWave = 0, kills = 0, matches = 0 }
+end
+
+local function sanitize(value)
+	local result = defaults()
+	if type(value) == "table" then
+		for key, defaultValue in pairs(result) do
+			local n = value[key]
+			if type(n) == "number" and n == n and n &gt;= 0 and n &lt; 1e12 then
+				result[key] = math.floor(n)
+			else
+				result[key] = defaultValue
+			end
+		end
+	end
+	return result
+end
+
+local function retry(callback)
+	local lastError
+	for attempt = 1, 3 do
+		local ok, result = pcall(callback)
+		if ok then return true, result end
+		lastError = result
+		if attempt &lt; 3 then task.wait(0.8 * 2 ^ (attempt - 1) + math.random() * 0.2) end
+	end
+	return false, lastError
+end
+
+function Profiles:Init()
+	local ok, store = pcall(function()
+		return DataStoreService:GetDataStore(STORE_NAME)
+	end)
+	if ok then self.store = store end
+	task.spawn(function()
+		while self.running do
+			task.wait(SAVE_EVERY)
+			for player, session in pairs(self.Sessions) do
+				task.spawn(function()
+					if self.Sessions[player] ~= session or session.closed then return end
+					local saved = self:Save(player, false)
+					if session.lost then
+						player:Kick("Профиль открыт на другом сервере. Подключитесь снова через минуту.")
+					elseif not saved then
+						warn("[Profiles] Autosave failed for", player.UserId)
+					end
+				end)
+			end
+		end
+	end)
+end
+
+function Profiles:Load(player)
+	local session = {
+		data = defaults(), canSave = false, status = "loading", dirty = false,
+		busy = false, closed = false, lost = false,
+		lockId = HttpService:GenerateGUID(false),
+	}
+	self.Sessions[player] = session
+	if RunService:IsStudio() or not self.store then
+		session.status = "local"
+		return session
+	end
+	local lockedByOther = false
+	local ok, record = retry(function()
+		return self.store:UpdateAsync("u_" .. player.UserId, function(old)
+			lockedByOther = false
+			-- PlayerRemoving may run while the initial UpdateAsync is in flight.
+			if session.closed then return nil end
+			if type(old) == "table" and type(old.lock) == "table"
+				and old.lock.id ~= session.lockId and (old.lock.expires or 0) &gt; os.time() then
+				lockedByOther = true
+				return nil
+			end
+			local data = sanitize(old)
+			data.lock = { id = session.lockId, expires = os.time() + LOCK_SECONDS }
+			return data
+		end)
+	end)
+	if self.Sessions[player] ~= session or session.closed then
+		-- If the lock was acquired just before disconnect, release only that lock.
+		if ok and type(record) == "table" and type(record.lock) == "table" and record.lock.id == session.lockId then
+			pcall(function()
+				self.store:UpdateAsync("u_" .. player.UserId, function(old)
+					if type(old) == "table" and type(old.lock) == "table" and old.lock.id == session.lockId then
+						local data = sanitize(old)
+						data.lock = nil
+						return data
+					end
+					return nil
+				end)
+			end)
+		end
+		return session
+	end
+	if lockedByOther then
+		session.status = "locked"
+		player:Kick("Твой профиль ещё закрывается на другом сервере. Подожди минуту и попробуй снова.")
+	elseif ok and type(record) == "table" and type(record.lock) == "table" and record.lock.id == session.lockId then
+		session.data = sanitize(record)
+		session.canSave = true
+		session.status = "saved"
+	else
+		session.status = "unavailable"
+		warn("[Profiles] Load failed; writes disabled for", player.UserId, record)
+	end
+	return session
+end
+
+function Profiles:Get(player)
+	local session = self.Sessions[player]
+	return session and session.data or defaults()
+end
+
+function Profiles:Add(player, fields)
+	local session = self.Sessions[player]
+	if not session then return end
+	for key, amount in pairs(fields) do
+		if session.data[key] ~= nil and type(amount) == "number" and amount &gt;= 0 then
+			session.data[key] = math.min(1e11, session.data[key] + math.floor(amount))
+			session.dirty = true
+		end
+	end
+end
+
+function Profiles:Best(player, wave)
+	local session = self.Sessions[player]
+	if session and wave &gt; session.data.bestWave then
+		session.data.bestWave = wave
+		session.dirty = true
+	end
+end
+
+function Profiles:Save(player, release)
+	local session = self.Sessions[player]
+	if not session then return true end
+	if release then session.closed = true end
+	if not session.canSave then
+		if release then self.Sessions[player] = nil end
+		return session.status == "local"
+	end
+	local deadline = os.clock() + 12
+	while session.busy and os.clock() &lt; deadline do task.wait(0.05) end
+	if session.busy then return false end
+	session.busy = true
+	local snapshot = table.clone(session.data)
+	snapshot.lock = { id = session.lockId, expires = os.time() + LOCK_SECONDS }
+	if release then snapshot.lock = nil end
+	local ok, result = retry(function()
+		return self.store:UpdateAsync("u_" .. player.UserId, function(old)
+			if type(old) ~= "table" or type(old.lock) ~= "table" or old.lock.id ~= session.lockId then
+				session.lost = true
+				return nil
+			end
+			return snapshot
+		end)
+	end)
+	local success = ok and type(result) == "table" and not session.lost
+	session.busy = false
+	if success then
+		session.dirty = false
+		session.status = "saved"
+	elseif session.lost then
+		session.canSave = false
+		session.status = "lost"
+	end
+	if release then
+		-- Keep a lost session marked so a late autosave cannot resurrect it.
+		if not session.lost then self.Sessions[player] = nil end
+	elseif not success then
+		session.status = "unavailable"
+	end
+	return success
+end
+
+function Profiles:Shutdown()
+	self.running = false
+	local pending = 0
+	for player in pairs(self.Sessions) do
+		pending += 1
+		task.spawn(function()
+			self:Save(player, true)
+			pending -= 1
+		end)
+	end
+	local deadline = os.clock() + 25
+	while pending &gt; 0 and os.clock() &lt; deadline do task.wait(0.1) end
+end
+
+return Profiles
+</ProtectedString>
+            </Properties>
+          </Item>
+          <Item class="ModuleScript" referent="RBX19">
+            <Properties>
+              <string name="Name">Towers</string>
+              <ProtectedString name="Source">local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Config = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"))
+local Models = require(script.Parent.Models)
+local Map = require(script.Parent.Map)
+local Towers = { ByPad = {}, folder = nil }
+
+function Towers:Init(folder)
+	self.folder = folder
+end
+
+function Towers:CreateModel(tower)
+	if tower.model then tower.model:Destroy() end
+	local pad = Map.Pads[tower.padId]
+	local model, head = Models.Tower(tower.kind, tower.level, pad.position, tower.padId)
+	tower.model, tower.head = model, head
+	model.Parent = self.folder
+	pad.model = model
+	pad.part:SetAttribute("TowerType", tower.kind)
+	pad.part:SetAttribute("Level", tower.level)
+	pad.part:SetAttribute("OwnerId", tower.ownerId)
+	pad.part:SetAttribute("OwnerName", tower.ownerName)
+	pad.part:SetAttribute("Invested", tower.invested)
+	pad.part:SetAttribute("Priority", tower.priority)
+	pad.top.Color = Config.Towers[tower.kind].color:Lerp(Color3.fromRGB(30, 45, 55), 0.65)
+	pad.label.TextTransparency = 1
+end
+
+function Towers:Build(padId, kind, player)
+	local pad = Map.Pads[padId]
+	if not pad or pad.model then return nil end
+	local tower = {
+		padId = padId, kind = kind, level = 1, ownerId = player.UserId,
+		ownerName = player.DisplayName, invested = Config.Towers[kind].cost,
+		cooldown = 0.15, priority = "First", position = pad.position,
+	}
+	self.ByPad[padId] = tower
+	self:CreateModel(tower)
+	return tower
+end
+
+function Towers:Upgrade(padId)
+	local tower = self.ByPad[padId]
+	if not tower or tower.level &gt;= 4 then return false end
+	tower.level += 1
+	self:CreateModel(tower)
+	return true
+end
+
+function Towers:Remove(padId)
+	local tower = self.ByPad[padId]
+	if not tower then return end
+	if tower.model then tower.model:Destroy() end
+	local pad = Map.Pads[padId]
+	pad.model = nil
+	pad.part:SetAttribute("TowerType", "")
+	pad.part:SetAttribute("OwnerId", 0)
+	pad.part:SetAttribute("OwnerName", "")
+	pad.part:SetAttribute("Level", 0)
+	pad.part:SetAttribute("Invested", 0)
+	pad.top.Color = Color3.fromRGB(77, 103, 105)
+	pad.label.TextTransparency = 0.15
+	self.ByPad[padId] = nil
+end
+
+function Towers:Clear()
+	for padId in pairs(self.ByPad) do self:Remove(padId) end
+	if self.folder then self.folder:ClearAllChildren() end
+	Map.ResetPads()
+end
+
+function Towers:Update(dt, enemies, emit, now)
+	for _, tower in pairs(self.ByPad) do
+		tower.cooldown -= dt
+		if tower.cooldown &lt;= 0 then
+			local def = Config.Towers[tower.kind]
+			local stats = Config.Stats(tower.kind, tower.level)
+			local target = enemies:Choose(tower.position, stats.range, def.air, tower.priority)
+			if target then
+				tower.cooldown = stats.interval
+				local headPosition = tower.position + Vector3.new(0, 3.45, 0)
+				local flatTarget = Vector3.new(target.position.X, headPosition.Y, target.position.Z)
+				if (flatTarget - headPosition).Magnitude &gt; 0.01 then
+					tower.head:PivotTo(CFrame.lookAt(headPosition, flatTarget))
+				end
+				local origin = headPosition + Vector3.new(0, 0.4, 0)
+				local targetPosition = target.position
+				emit({ kind = tower.kind, from = origin, to = targetPosition, color = def.color, radius = stats.splash })
+				if tower.kind == "Cannon" then
+					for _, enemy in ipairs(enemies:InRadius(targetPosition, stats.splash, false)) do
+						local falloff = 1 - math.min(0.35, (enemy.position - targetPosition).Magnitude / stats.splash * 0.35)
+						enemies:Damage(enemy, stats.damage * falloff, tower.ownerId)
+					end
+				elseif tower.kind == "Tesla" then
+					local hit = {}
+					local current = target
+					for jump = 1, stats.chains + 1 do
+						if not current or current.dead then break end
+						local previousPosition = current.position
+						hit[current.id] = true
+						enemies:Damage(current, stats.damage * 0.78 ^ (jump - 1), tower.ownerId)
+						local nextEnemy, nearest = nil, def.chainRange ^ 2
+						if jump &lt;= stats.chains then
+							for _, candidate in ipairs(enemies:Candidates(previousPosition, def.chainRange, true)) do
+								if not hit[candidate.enemy.id] and candidate.distance &lt; nearest then
+									nextEnemy, nearest = candidate.enemy, candidate.distance
+								end
+							end
+						end
+						if nextEnemy then emit({ kind = "Chain", from = previousPosition, to = nextEnemy.position, color = def.color }) end
+						current = nextEnemy
+					end
+				else
+					if tower.kind == "Frost" then enemies:Slow(target, def.slow, stats.slowTime, now) end
+					enemies:Damage(target, stats.damage, tower.ownerId)
+				end
+			else
+				tower.cooldown = 0
+			end
+		end
+	end
+end
+
+return Towers
+</ProtectedString>
+            </Properties>
+          </Item>
+        </Item>
+      </Item>
+    </Item>
+    <Item class="StarterPlayer" referent="RBX20">
+      <Properties>
+        <string name="Name">StarterPlayer</string>
+      </Properties>
+      <Item class="StarterPlayerScripts" referent="RBX21">
+        <Properties>
+          <string name="Name">StarterPlayerScripts</string>
+        </Properties>
+        <Item class="Folder" referent="RBX22">
+          <Properties>
+            <string name="Name">Client</string>
+          </Properties>
+          <Item class="Folder" referent="RBX23">
+            <Properties>
+              <string name="Name">Controllers</string>
+            </Properties>
+            <Item class="ModuleScript" referent="RBX24">
+              <Properties>
+                <string name="Name">Camera</string>
+                <ProtectedString name="Source">local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local Config = require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Config"))
+
+local Camera = {}
+Camera.Center = Config.Map.Center
+Camera.Distance = 188
+Camera.Yaw = 0
+Camera.Pitch = math.rad(59)
+Camera.OnTap = nil
+local rightDown, middleDown = false, false
+local tapStart, tapPosition, tapTime, dragged = nil, nil, 0, false
+local touches, pinchDistance = {}, nil
+local keys = {}
+
+function Camera:Init()
+	self.camera = workspace.CurrentCamera
+	workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(function()
+		self.camera = workspace.CurrentCamera
+		if self.camera then self.camera.CameraType = Enum.CameraType.Scriptable end
+	end)
+	self.camera.CameraType = Enum.CameraType.Scriptable
+	self.camera.FieldOfView = 50
+	UserInputService.InputBegan:Connect(function(input, processed)
+		if processed then return end
+		if input.UserInputType == Enum.UserInputType.Keyboard then
+			keys[input.KeyCode] = true
+			if input.KeyCode == Enum.KeyCode.R then self:Reset() end
+		elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
+			rightDown = true
+		elseif input.UserInputType == Enum.UserInputType.MouseButton3 then
+			middleDown = true
+		elseif input.UserInputType == Enum.UserInputType.MouseButton1 then
+			tapStart = input.Position; tapPosition = input.Position; tapTime = os.clock(); dragged = false
+		elseif input.UserInputType == Enum.UserInputType.Touch then
+			touches[input] = input.Position
+			tapStart = input.Position; tapPosition = input.Position; tapTime = os.clock(); dragged = false
+		end
+	end)
+	UserInputService.InputChanged:Connect(function(input, processed)
+		if input.UserInputType == Enum.UserInputType.MouseMovement then
+			if rightDown then
+				self.Yaw -= input.Delta.X * 0.004
+				self.Pitch = math.clamp(self.Pitch + input.Delta.Y * 0.003, math.rad(40), math.rad(78))
+			elseif middleDown then
+				self:Pan(input.Delta)
+			end
+			if tapStart and (Vector2.new(input.Position.X, input.Position.Y) - Vector2.new(tapStart.X, tapStart.Y)).Magnitude &gt; 8 then dragged = true end
+		elseif input.UserInputType == Enum.UserInputType.MouseWheel and not processed then
+			self:Zoom(input.Position.Z &gt; 0 and 0.9 or 1.1)
+		elseif input.UserInputType == Enum.UserInputType.Touch then
+			touches[input] = input.Position
+			local points = {}
+			for _, position in pairs(touches) do table.insert(points, position) end
+			if #points &gt;= 2 then
+				local distance = (points[1] - points[2]).Magnitude
+				if pinchDistance and distance &gt; 5 then self:Zoom(pinchDistance / distance) end
+				pinchDistance = distance; dragged = true
+			elseif not processed and tapStart then
+				local delta = Vector2.new(input.Position.X, input.Position.Y) - Vector2.new(tapPosition.X, tapPosition.Y)
+				if (Vector2.new(input.Position.X, input.Position.Y) - Vector2.new(tapStart.X, tapStart.Y)).Magnitude &gt; 9 then dragged = true end
+				if dragged then self:Pan(delta) end
+				tapPosition = Vector3.new(input.Position.X, input.Position.Y, 0)
+			end
+		end
+	end)
+	UserInputService.InputEnded:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.Keyboard then keys[input.KeyCode] = nil
+		elseif input.UserInputType == Enum.UserInputType.MouseButton2 then rightDown = false
+		elseif input.UserInputType == Enum.UserInputType.MouseButton3 then middleDown = false
+		elseif input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			if input.UserInputType == Enum.UserInputType.Touch then touches[input] = nil; pinchDistance = nil end
+			if tapStart and not dragged and os.clock() - tapTime &lt; 0.45 and self.OnTap then
+				self.OnTap(Vector2.new(input.Position.X, input.Position.Y))
+			end
+			tapStart = nil
+		end
+	end)
+	RunService.RenderStepped:Connect(function(dt) self:Update(dt) end)
+end
+
+function Camera:Pan(delta)
+	local scale = self.Distance / 650
+	local right = Vector3.new(math.cos(self.Yaw), 0, -math.sin(self.Yaw))
+	local forward = Vector3.new(-math.sin(self.Yaw), 0, -math.cos(self.Yaw))
+	self.Center -= right * delta.X * scale + forward * delta.Y * scale
+	self:Clamp()
+end
+
+function Camera:Zoom(factor)
+	self.Distance = math.clamp(self.Distance * factor, 55, 270)
+end
+
+function Camera:Clamp()
+	self.Center = Vector3.new(math.clamp(self.Center.X, -90, 90), 0, math.clamp(self.Center.Z, -60, 55))
+end
+
+function Camera:SetCenter(position)
+	self.Center = Vector3.new(position.X, 0, position.Z); self:Clamp()
+end
+
+function Camera:Reset()
+	self.Center = Config.Map.Center; self.Distance = 188; self.Yaw = 0; self.Pitch = math.rad(59)
+end
+
+function Camera:Update(dt)
+	if not self.camera then return end
+	local movement = Vector2.zero
+	if keys[Enum.KeyCode.W] or keys[Enum.KeyCode.Up] then movement += Vector2.new(0, 1) end
+	if keys[Enum.KeyCode.S] or keys[Enum.KeyCode.Down] then movement += Vector2.new(0, -1) end
+	if keys[Enum.KeyCode.A] or keys[Enum.KeyCode.Left] then movement += Vector2.new(-1, 0) end
+	if keys[Enum.KeyCode.D] or keys[Enum.KeyCode.Right] then movement += Vector2.new(1, 0) end
+	if movement.Magnitude &gt; 0 then
+		local speed = self.Distance * 0.7 * math.min(dt, 0.05)
+		local right = Vector3.new(math.cos(self.Yaw), 0, -math.sin(self.Yaw))
+		local forward = Vector3.new(-math.sin(self.Yaw), 0, -math.cos(self.Yaw))
+		self.Center += (right * movement.X + forward * movement.Y) * speed
+		self:Clamp()
+	end
+	local offset = Vector3.new(math.sin(self.Yaw) * math.cos(self.Pitch), math.sin(self.Pitch), math.cos(self.Yaw) * math.cos(self.Pitch)) * self.Distance
+	self.camera.CFrame = CFrame.lookAt(self.Center + offset, self.Center)
+end
+
+function Camera:GroundPoint(screenPosition)
+	if not self.camera then return nil end
+	local ray = self.camera:ScreenPointToRay(screenPosition.X, screenPosition.Y)
+	if ray.Direction.Y &gt;= -0.001 then return nil end
+	local distance = (0.5 - ray.Origin.Y) / ray.Direction.Y
+	if distance &lt; 0 then return nil end
+	local point = ray.Origin + ray.Direction * distance
+	if math.abs(point.X) &gt; 90 or math.abs(point.Z) &gt; 60 then return nil end
+	return point
+end
+
+return Camera
+</ProtectedString>
+              </Properties>
+            </Item>
+            <Item class="ModuleScript" referent="RBX25">
+              <Properties>
+                <string name="Name">Effects</string>
+                <ProtectedString name="Source">local TweenService = game:GetService("TweenService")
+local Debris = game:GetService("Debris")
+local RunService = game:GetService("RunService")
+local Effects = { count = 0 }
+
+function Effects:Init()
+	self.folder = Instance.new("Folder"); self.folder.Name = "TD_ClientFX"; self.folder.Parent = workspace
+end
+
+function Effects:Part(size, cframe, color, shape, transparency)
+	local part = Instance.new("Part")
+	part.Size = size; part.CFrame = cframe; part.Color = color; part.Material = Enum.Material.Neon
+	part.Anchored = true; part.CanCollide = false; part.CanTouch = false; part.CanQuery = false
+	part.Transparency = transparency or 0
+	if shape then part.Shape = shape end
+	part.Parent = self.folder
+	self.count += 1
+	part.Destroying:Once(function() self.count = math.max(0, self.count - 1) end)
+	Debris:AddItem(part, 3)
+	return part
+end
+
+function Effects:Beam(from, to, color, width, lifetime)
+	if self.count &gt; 150 then return end
+	local length = (to - from).Magnitude
+	if length &lt; 0.05 then return end
+	local beam = self:Part(Vector3.new(width or 0.14, width or 0.14, length), CFrame.lookAt((from + to) / 2, to), color)
+	TweenService:Create(beam, TweenInfo.new(lifetime or 0.13), { Transparency = 1 }):Play()
+	Debris:AddItem(beam, lifetime or 0.13)
+end
+
+function Effects:Burst(position, color, radius, lifetime)
+	if self.count &gt; 150 then return end
+	local sphere = self:Part(Vector3.new(1, 1, 1), CFrame.new(position), color, Enum.PartType.Ball, 0.55)
+	TweenService:Create(sphere, TweenInfo.new(lifetime or 0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+		Size = Vector3.new(radius * 2, radius * 1.1, radius * 2), Transparency = 1,
+	}):Play()
+	Debris:AddItem(sphere, (lifetime or 0.35) + 0.05)
+end
+
+function Effects:Projectile(from, to, color, radius, meteor)
+	if self.count &gt; 140 then return end
+	local start = meteor and to + Vector3.new(16, 55, -8) or from
+	local orb = self:Part(Vector3.new(1, 1, 1) * (meteor and 3 or 0.7), CFrame.new(start), color, Enum.PartType.Ball)
+	local duration = meteor and 0.48 or 0.3
+	local elapsed = 0
+	local connection
+	connection = RunService.Heartbeat:Connect(function(dt)
+		elapsed += dt
+		local alpha = math.min(1, elapsed / duration)
+		local position = start:Lerp(to, alpha)
+		if not meteor then position += Vector3.new(0, math.sin(alpha * math.pi) * 8, 0) end
+		orb.CFrame = CFrame.new(position)
+		if alpha &gt;= 1 then
+			connection:Disconnect(); orb:Destroy()
+			self:Burst(to, color, radius or 6, 0.4)
+		end
+	end)
+	Debris:AddItem(orb, duration + 0.2)
+	task.delay(duration + 0.25, function() if connection.Connected then connection:Disconnect() end end)
+end
+
+function Effects:Play(batch)
+	for _, effect in ipairs(batch) do
+		local kind, color = effect.kind, effect.color
+		if kind == "Sentry" then self:Beam(effect.from, effect.to, color, 0.12, 0.1)
+		elseif kind == "Frost" then self:Beam(effect.from, effect.to, color, 0.22, 0.18); self:Burst(effect.to, color, 1.6, 0.2)
+		elseif kind == "Cannon" then self:Projectile(effect.from, effect.to, color, effect.radius, false)
+		elseif kind == "Tesla" or kind == "Chain" then
+			local middle = (effect.from + effect.to) / 2 + Vector3.new(math.random(-10, 10) / 10, math.random(0, 12) / 10, math.random(-10, 10) / 10)
+			self:Beam(effect.from, middle, color, 0.22, 0.18); self:Beam(middle, effect.to, color, 0.22, 0.18)
+		elseif kind == "Meteor" then self:Projectile(effect.from, effect.to, color, effect.radius, true)
+		elseif kind == "Freeze" then self:Burst(Vector3.new(0, 1, 0), color, effect.radius, 0.9)
+		elseif kind == "Defeat" then self:Burst(effect.to, color, effect.boss and 7 or 1.8, effect.boss and 0.6 or 0.22)
+		elseif kind == "Build" then self:Burst(effect.to, color, 4, 0.45)
+		elseif kind == "CoreHit" then self:Burst(effect.to, color, 7, 0.4)
+		end
+	end
+end
+
+return Effects
+</ProtectedString>
+              </Properties>
+            </Item>
+            <Item class="ModuleScript" referent="RBX26">
+              <Properties>
+                <string name="Name">Theme</string>
+                <ProtectedString name="Source">return {
+	Background = Color3.fromRGB(17, 29, 40),
+	Panel = Color3.fromRGB(24, 40, 53),
+	Panel2 = Color3.fromRGB(34, 53, 67),
+	Stroke = Color3.fromRGB(83, 113, 126),
+	Text = Color3.fromRGB(232, 243, 242),
+	Muted = Color3.fromRGB(151, 177, 186),
+	Mint = Color3.fromRGB(126, 239, 193),
+	Gold = Color3.fromRGB(255, 210, 120),
+	Red = Color3.fromRGB(255, 135, 124),
+	Blue = Color3.fromRGB(126, 213, 255),
+	Font = Enum.Font.Gotham,
+	Bold = Enum.Font.GothamBold,
+}
+</ProtectedString>
+              </Properties>
+            </Item>
+            <Item class="ModuleScript" referent="RBX27">
+              <Properties>
+                <string name="Name">UI</string>
+                <ProtectedString name="Source">local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Config = require(Shared:WaitForChild("Config"))
+local Format = require(Shared:WaitForChild("Format"))
+local Waves = require(Shared:WaitForChild("Waves"))
+local Theme = require(script.Parent.Theme)
+local UI = {}
+UI.__index = UI
+
+local function create(class, properties, parent)
+	local object = Instance.new(class)
+	for key, value in pairs(properties) do object[key] = value end
+	object.Parent = parent
+	return object
+end
+local function corner(object, radius)
+	create("UICorner", { CornerRadius = UDim.new(0, radius or 10) }, object)
+end
+local function stroke(object, color, transparency, thickness)
+	return create("UIStroke", { Color = color or Theme.Stroke, Transparency = transparency or 0.65, Thickness = thickness or 1, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }, object)
+end
+local function panel(parent, name, position, size, color)
+	local frame = create("Frame", { Name = name, Position = position, Size = size, BackgroundColor3 = color or Theme.Panel, BackgroundTransparency = 0.04, BorderSizePixel = 0 }, parent)
+	corner(frame, 12); stroke(frame); return frame
+end
+local function text(parent, value, position, size, fontSize, color, bold)
+	return create("TextLabel", {
+		Text = value, Position = position, Size = size, BackgroundTransparency = 1,
+		Font = bold and Theme.Bold or Theme.Font, TextSize = fontSize or 14,
+		TextColor3 = color or Theme.Text, TextXAlignment = Enum.TextXAlignment.Left,
+		TextYAlignment = Enum.TextYAlignment.Center, TextTruncate = Enum.TextTruncate.AtEnd,
+	}, parent)
+end
+local function button(parent, value, position, size, color, callback, fontSize)
+	local object = create("TextButton", {
+		Text = value, Position = position, Size = size, BackgroundColor3 = color or Theme.Panel2,
+		TextColor3 = Theme.Text, Font = Theme.Bold, TextSize = fontSize or 13,
+		BorderSizePixel = 0, AutoButtonColor = false, TextWrapped = true,
+	}, parent)
+	corner(object, 8); local outline = stroke(object, Theme.Stroke, 0.6)
+	object.MouseEnter:Connect(function() TweenService:Create(outline, TweenInfo.new(0.12), { Transparency = 0.05 }):Play() end)
+	object.MouseLeave:Connect(function() TweenService:Create(outline, TweenInfo.new(0.12), { Transparency = 0.6 }):Play() end)
+	object.Activated:Connect(function() if callback then callback() end end)
+	return object, outline
+end
+local function bar(parent, position, size, color)
+	local back = create("Frame", { Position = position, Size = size, BackgroundColor3 = Theme.Background, BorderSizePixel = 0 }, parent)
+	corner(back, 3)
+	local fill = create("Frame", { Name = "Fill", Size = UDim2.fromScale(1, 1), BackgroundColor3 = color, BorderSizePixel = 0 }, back)
+	corner(fill, 3); return fill
+end
+
+function UI.new(actions)
+	local self = setmetatable({ actions = actions, selectedPad = nil, pendingType = nil, targeting = false, teamOpen = false, toasts = {}, shop = {}, slots = {} }, UI)
+	self.gui = create("ScreenGui", { Name = "TD_HUD", ResetOnSpawn = false, IgnoreGuiInset = true, DisplayOrder = 10, ZIndexBehavior = Enum.ZIndexBehavior.Sibling }, Players.LocalPlayer:WaitForChild("PlayerGui"))
+	self.root = create("Frame", { Name = "Root", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1 }, self.gui)
+	self:BuildTop()
+	self:BuildTeam()
+	self:BuildWave()
+	self:BuildShop()
+	self:BuildAbilities()
+	self:BuildInspector()
+	self:BuildMinimap()
+	self:BuildModals()
+	self.toastRoot = create("Frame", { AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 90), Size = UDim2.fromOffset(430, 180), BackgroundTransparency = 1, ZIndex = 40 }, self.root)
+	create("UIListLayout", { Padding = UDim.new(0, 6), HorizontalAlignment = Enum.HorizontalAlignment.Center, SortOrder = Enum.SortOrder.LayoutOrder }, self.toastRoot)
+	self.loading = create("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Theme.Background, BackgroundTransparency = 0.08, ZIndex = 70, Active = true }, self.root)
+	text(self.loading, "РУБЕЖ", UDim2.new(0.5, -160, 0.43, 0), UDim2.fromOffset(320, 50), 40, Theme.Mint, true).TextXAlignment = Enum.TextXAlignment.Center
+	self.loadingText = text(self.loading, "Соединяемся с сервером…", UDim2.new(0.5, -200, 0.53, 0), UDim2.fromOffset(400, 30), 16, Theme.Muted)
+	self.loadingText.TextXAlignment = Enum.TextXAlignment.Center
+	local camera = workspace.CurrentCamera
+	if camera then camera:GetPropertyChangedSignal("ViewportSize"):Connect(function() self:Resize() end) end
+	self:Resize()
+	return self
+end
+
+function UI:BuildTop()
+	self.top = panel(self.root, "TopBar", UDim2.fromOffset(16, 14), UDim2.new(1, -32, 0, 64))
+	self.brand = text(self.top, "РУБЕЖ", UDim2.fromOffset(18, 9), UDim2.fromOffset(155, 29), 25, Theme.Mint, true)
+	self.brandSub = text(self.top, "CO-OP TOWER DEFENSE", UDim2.fromOffset(19, 39), UDim2.fromOffset(165, 14), 9, Theme.Muted, true)
+	local function stat(name, caption, x, width, color)
+		local frame = create("Frame", { Name = name, Position = UDim2.fromOffset(x, 9), Size = UDim2.fromOffset(width, 48), BackgroundTransparency = 1 }, self.top)
+		local title = text(frame, caption, UDim2.fromOffset(0, 0), UDim2.new(1, 0, 0, 15), 9, Theme.Muted, true)
+		local value = text(frame, "—", UDim2.fromOffset(0, 17), UDim2.new(1, 0, 0, 25), 21, color or Theme.Text, true)
+		return { frame = frame, title = title, value = value }
+	end
+	self.waveStat = stat("Wave", "ВОЛНА", 195, 110)
+	self.coreStat = stat("Core", "ПРОЧНОСТЬ ЯДРА", 315, 155, Theme.Mint)
+	self.coreBar = bar(self.coreStat.frame, UDim2.fromOffset(0, 45), UDim2.new(1, -8, 0, 3), Theme.Mint)
+	self.goldStat = stat("Gold", "ВАШЕ ЗОЛОТО", 495, 125, Theme.Gold)
+	self.enemyStat = stat("Enemies", "ОСТАЛОСЬ ВРАГОВ", 640, 125)
+	self.phaseStat = stat("Phase", "ПОДГОТОВКА", 800, 170, Theme.Blue)
+	self.helpButton = button(self.top, "?", UDim2.new(1, -49, 0, 15), UDim2.fromOffset(34, 34), Theme.Panel2, function() self:ShowHelp(true) end, 18)
+end
+
+function UI:BuildTeam()
+	self.team = panel(self.root, "Team", UDim2.fromOffset(16, 92), UDim2.fromOffset(192, 236))
+	self.teamTitle = text(self.team, "ОТРЯД  1 / 4", UDim2.fromOffset(13, 10), UDim2.new(1, -26, 0, 20), 11, Theme.Muted, true)
+	for index = 1, 4 do
+		local row = create("Frame", { Position = UDim2.fromOffset(10, 38 + (index - 1) * 47), Size = UDim2.new(1, -20, 0, 43), BackgroundColor3 = Theme.Panel2, BackgroundTransparency = 0.35, BorderSizePixel = 0 }, self.team)
+		corner(row, 7)
+		local dot = create("Frame", { Position = UDim2.fromOffset(8, 11), Size = UDim2.fromOffset(6, 6), BackgroundColor3 = Theme.Stroke, BorderSizePixel = 0 }, row); corner(dot, 3)
+		local name = text(row, "Свободное место", UDim2.fromOffset(21, 4), UDim2.new(1, -27, 0, 18), 12, Theme.Text, true)
+		local detail = text(row, "Пригласите друга", UDim2.fromOffset(21, 23), UDim2.new(1, -27, 0, 14), 10, Theme.Muted)
+		self.slots[index] = { row = row, dot = dot, name = name, detail = detail }
+	end
+	self.teamToggle = button(self.root, "ОТРЯД", UDim2.fromOffset(12, 116), UDim2.fromOffset(78, 30), Theme.Panel, function()
+		self.teamOpen = not self.teamOpen; self:Resize()
+	end, 10)
+end
+
+function UI:BuildWave()
+	self.preview = panel(self.root, "WavePreview", UDim2.new(1, -266, 0, 92), UDim2.fromOffset(250, 96))
+	self.previewTitle = text(self.preview, "СЛЕДУЮЩАЯ ВОЛНА  01", UDim2.fromOffset(13, 9), UDim2.new(1, -26, 0, 18), 11, Theme.Blue, true)
+	self.previewDescription = text(self.preview, "Разведчики", UDim2.fromOffset(13, 31), UDim2.new(1, -26, 0, 19), 14, Theme.Text, true)
+	self.previewCounts = text(self.preview, "", UDim2.fromOffset(13, 54), UDim2.new(1, -26, 0, 29), 10, Theme.Muted)
+	self.previewCounts.TextWrapped = true
+	self.waveBar = bar(self.preview, UDim2.fromOffset(13, 86), UDim2.new(1, -26, 0, 3), Theme.Blue)
+	self.command = panel(self.root, "Command", UDim2.new(1, -266, 0, 200), UDim2.fromOffset(250, 142))
+	self.readyButton = button(self.command, "Я ГОТОВ", UDim2.fromOffset(10, 10), UDim2.new(1, -20, 0, 42), Color3.fromRGB(44, 100, 83), function()
+		local mine = self:Mine()
+		self.actions.Send("Ready", { ready = not (mine and mine.ready) })
+	end)
+	self.normalButton = button(self.command, "Обычный", UDim2.fromOffset(10, 61), UDim2.new(0.5, -14, 0, 32), Theme.Panel2, function() self.actions.Send("Difficulty", { value = "Normal" }) end, 11)
+	self.hardButton = button(self.command, "Испытание", UDim2.new(0.5, 4, 0, 61), UDim2.new(0.5, -14, 0, 32), Theme.Panel2, function() self.actions.Send("Difficulty", { value = "Hard" }) end, 11)
+	self.skipButton = button(self.command, "СЛЕДУЮЩАЯ ВОЛНА", UDim2.fromOffset(10, 10), UDim2.new(1, -20, 0, 42), Color3.fromRGB(44, 83, 105), function() self.actions.Send("Skip", {}) end, 12)
+	self.speed1 = button(self.command, "1×", UDim2.fromOffset(10, 61), UDim2.new(0.5, -14, 0, 32), Theme.Panel2, function() self.actions.Send("Speed", { value = 1 }) end)
+	self.speed2 = button(self.command, "2×", UDim2.new(0.5, 4, 0, 61), UDim2.new(0.5, -14, 0, 32), Theme.Panel2, function() self.actions.Send("Speed", { value = 2 }) end)
+	self.commandHint = text(self.command, "", UDim2.fromOffset(12, 101), UDim2.new(1, -24, 0, 31), 10, Theme.Muted)
+	self.commandHint.TextWrapped = true
+end
+
+function UI:TowerIcon(parent, kind, color)
+	local icon = create("Frame", { Name = "Icon", Position = UDim2.fromOffset(12, 7), Size = UDim2.fromOffset(44, 39), BackgroundTransparency = 1 }, parent)
+	local function piece(x, y, w, h, c, rotation)
+		local p = create("Frame", { Position = UDim2.fromOffset(x, y), Size = UDim2.fromOffset(w, h), BackgroundColor3 = c or color, BorderSizePixel = 0, Rotation = rotation or 0 }, icon); corner(p, 2); return p
+	end
+	piece(4, 32, 36, 5, Theme.Stroke)
+	if kind == "Sentry" then
+		piece(11, 17, 23, 15); piece(13, 3, 6, 20, Theme.Text); piece(26, 3, 6, 20, Theme.Text)
+	elseif kind == "Cannon" then
+		piece(9, 19, 27, 14); local barrel = piece(22, 3, 10, 25, Theme.Text, 35); barrel.AnchorPoint = Vector2.new(0.5, 0.5)
+	elseif kind == "Frost" then
+		piece(13, 7, 20, 20, color, 45); piece(4, 24, 7, 9); piece(35, 24, 7, 9)
+	else
+		piece(20, 7, 5, 26, Theme.Text); piece(10, 13, 25, 5); piece(8, 22, 29, 5); piece(17, 2, 11, 9)
+	end
+	return icon
+end
+
+function UI:BuildShop()
+	self.hint = text(self.root, "ЛКМ — площадка   ·   WASD — камера   ·   колесо — масштаб   ·   R — обзор", UDim2.new(0.5, -330, 1, -173), UDim2.fromOffset(660, 18), 10, Theme.Text)
+	self.hint.TextXAlignment = Enum.TextXAlignment.Center
+	self.hint.TextStrokeTransparency = 0.4
+	self.dock = panel(self.root, "Shop", UDim2.new(0.5, 0, 1, -16), UDim2.fromOffset(640, 132), Theme.Background)
+	self.dock.AnchorPoint = Vector2.new(0.5, 1)
+	for index, kind in ipairs(Config.TowerOrder) do
+		local def = Config.Towers[kind]
+		local card = create("TextButton", { Name = kind, Text = "", Position = UDim2.fromOffset(10 + (index - 1) * 156, 10), Size = UDim2.fromOffset(146, 112), BackgroundColor3 = Theme.Panel, BorderSizePixel = 0, AutoButtonColor = false }, self.dock)
+		corner(card, 9); local outline = stroke(card, def.color, 0.6)
+		local icon = self:TowerIcon(card, kind, def.color)
+		local name = text(card, def.name, UDim2.fromOffset(11, 49), UDim2.new(1, -22, 0, 18), 14, Theme.Text, true)
+		local role = text(card, def.role, UDim2.fromOffset(11, 69), UDim2.new(1, -16, 0, 14), 9, Theme.Muted)
+		local cost = text(card, Format.Number(def.cost) .. "  ◆", UDim2.fromOffset(11, 87), UDim2.new(1, -22, 0, 17), 13, Theme.Gold, true)
+		local key = text(card, tostring(index), UDim2.new(1, -23, 0, 8), UDim2.fromOffset(15, 15), 10, Theme.Muted, true)
+		card.MouseEnter:Connect(function() TweenService:Create(card, TweenInfo.new(0.12), { BackgroundColor3 = Theme.Panel2 }):Play() end)
+		card.MouseLeave:Connect(function() TweenService:Create(card, TweenInfo.new(0.12), { BackgroundColor3 = Theme.Panel }):Play() end)
+		card.Activated:Connect(function() self.actions.ChooseTower(kind) end)
+		self.shop[kind] = { card = card, outline = outline, icon = icon, name = name, role = role, cost = cost, key = key }
+	end
+end
+
+function UI:BuildAbilities()
+	self.abilities = create("Frame", { Position = UDim2.new(0, 16, 1, -292), Size = UDim2.fromOffset(192, 128), BackgroundTransparency = 1 }, self.root)
+	text(self.abilities, "ОБЩИЕ СПОСОБНОСТИ", UDim2.fromOffset(2, 0), UDim2.new(1, 0, 0, 16), 9, Theme.Text, true).TextStrokeTransparency = 0.5
+	self.meteorButton = button(self.abilities, "Q   МЕТЕОР", UDim2.fromOffset(0, 23), UDim2.new(1, 0, 0, 46), Theme.Panel, function() self.actions.Ability("Meteor") end, 12)
+	self.freezeButton = button(self.abilities, "E   СТУЖА", UDim2.fromOffset(0, 77), UDim2.new(1, 0, 0, 46), Theme.Panel, function() self.actions.Ability("Freeze") end, 12)
+end
+
+function UI:BuildInspector()
+	self.inspector = panel(self.root, "Inspector", UDim2.new(1, -306, 0, 92), UDim2.fromOffset(290, 354))
+	self.inspector.Visible = false
+	self.inspectorTitle = text(self.inspector, "ПЛОЩАДКА 01", UDim2.fromOffset(15, 12), UDim2.new(1, -58, 0, 18), 10, Theme.Muted, true)
+	button(self.inspector, "×", UDim2.new(1, -40, 0, 8), UDim2.fromOffset(30, 28), Theme.Panel2, function() self.actions.Deselect() end, 20)
+	self.towerName = text(self.inspector, "Свободная площадка", UDim2.fromOffset(15, 39), UDim2.new(1, -30, 0, 26), 21, Theme.Text, true)
+	self.towerOwner = text(self.inspector, "", UDim2.fromOffset(15, 69), UDim2.new(1, -30, 0, 18), 11, Theme.Muted)
+	self.towerDescription = text(self.inspector, "Выберите башню в нижней панели. Её стоимость спишется только при строительстве.", UDim2.fromOffset(15, 98), UDim2.new(1, -30, 0, 57), 12, Theme.Muted)
+	self.towerDescription.TextWrapped = true; self.towerDescription.TextYAlignment = Enum.TextYAlignment.Top
+	self.statsFrame = create("Frame", { Position = UDim2.fromOffset(15, 101), Size = UDim2.new(1, -30, 0, 57), BackgroundTransparency = 1 }, self.inspector)
+	self.damageStat = text(self.statsFrame, "УРОН", UDim2.fromOffset(0, 0), UDim2.fromOffset(80, 17), 9, Theme.Muted, true)
+	self.rangeStat = text(self.statsFrame, "РАДИУС", UDim2.fromOffset(88, 0), UDim2.fromOffset(80, 17), 9, Theme.Muted, true)
+	self.rateStat = text(self.statsFrame, "ВЫСТР./С", UDim2.fromOffset(176, 0), UDim2.fromOffset(80, 17), 9, Theme.Muted, true)
+	self.damageValue = text(self.statsFrame, "—", UDim2.fromOffset(0, 21), UDim2.fromOffset(80, 27), 21, Theme.Text, true)
+	self.rangeValue = text(self.statsFrame, "—", UDim2.fromOffset(88, 21), UDim2.fromOffset(80, 27), 21, Theme.Text, true)
+	self.rateValue = text(self.statsFrame, "—", UDim2.fromOffset(176, 21), UDim2.fromOffset(80, 27), 21, Theme.Text, true)
+	self.priorityLabel = text(self.inspector, "ПРИОРИТЕТ ЦЕЛИ", UDim2.fromOffset(15, 171), UDim2.new(1, -30, 0, 16), 9, Theme.Muted, true)
+	self.priorityButtons = {}
+	for index, priority in ipairs(Config.Priorities) do
+		local b = button(self.inspector, Config.PriorityLabels[priority], UDim2.fromOffset(15 + (index - 1) * 88, 193), UDim2.fromOffset(82, 30), Theme.Panel2, function() self.actions.Priority(priority) end, 10)
+		self.priorityButtons[priority] = b
+	end
+	self.upgradeButton = button(self.inspector, "УЛУЧШИТЬ", UDim2.fromOffset(15, 239), UDim2.new(1, -30, 0, 45), Color3.fromRGB(45, 102, 83), function() self.actions.Upgrade() end, 12)
+	self.sellButton = button(self.inspector, "ПРОДАТЬ", UDim2.fromOffset(15, 293), UDim2.new(1, -30, 0, 32), Theme.Panel2, function() self.actions.Sell() end, 11)
+	self.inspectorHint = text(self.inspector, "", UDim2.fromOffset(15, 331), UDim2.new(1, -30, 0, 14), 9, Theme.Muted)
+end
+
+function UI:BuildMinimap()
+	self.minimap = panel(self.root, "Minimap", UDim2.new(1, -176, 1, -134), UDim2.fromOffset(160, 118), Theme.Background)
+	text(self.minimap, "ТАКТИЧЕСКАЯ КАРТА", UDim2.fromOffset(10, 7), UDim2.new(1, -20, 0, 14), 8, Theme.Muted, true)
+	self.mapArea = create("Frame", { Position = UDim2.fromOffset(8, 27), Size = UDim2.fromOffset(144, 82), BackgroundColor3 = Color3.fromRGB(38, 65, 58), BorderSizePixel = 0 }, self.minimap)
+	corner(self.mapArea, 5)
+	self.mapDots = create("Frame", { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1 }, self.mapArea)
+	local Path = require(Shared:WaitForChild("Path"))
+	local function mapPosition(x, z) return UDim2.fromScale((x + 88) / 176, (z + 57) / 114) end
+	for _, segment in ipairs(Path.Segments) do
+		local a, b = segment.a, segment.b
+		local x, y = (math.min(a.x, b.x) + 88) / 176, (math.min(a.z, b.z) + 57) / 114
+		local w, h = (math.abs(a.x - b.x) + 2.5) / 176, (math.abs(a.z - b.z) + 2.5) / 114
+		create("Frame", { Position = UDim2.fromScale(x, y), Size = UDim2.fromScale(w, h), BackgroundColor3 = Color3.fromRGB(155, 151, 116), BorderSizePixel = 0 }, self.mapArea)
+	end
+	for _, point in ipairs(Config.Map.Pads) do
+		local dot = create("Frame", { AnchorPoint = Vector2.new(0.5, 0.5), Position = mapPosition(point[1] * Config.Map.Scale, point[2] * Config.Map.Scale), Size = UDim2.fromOffset(4, 4), BackgroundColor3 = Theme.Muted, BorderSizePixel = 0, ZIndex = 2 }, self.mapArea)
+		corner(dot, 2)
+	end
+	self.mapArea.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			local relative = (Vector2.new(input.Position.X, input.Position.Y) - self.mapArea.AbsolutePosition) / self.mapArea.AbsoluteSize
+			self.actions.FocusMap(Vector3.new(relative.X * 176 - 88, 0, relative.Y * 114 - 57))
+		end
+	end)
+end
+
+function UI:BuildModals()
+	self.modalShade = create("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 0.35, BorderSizePixel = 0, Visible = false, Active = true, ZIndex = 50 }, self.root)
+	self.result = panel(self.modalShade, "Result", UDim2.new(0.5, 0, 0.5, 0), UDim2.fromOffset(520, 448), Theme.Background)
+	self.result.AnchorPoint = Vector2.new(0.5, 0.5)
+	self.resultTitle = text(self.result, "РУБЕЖ УДЕРЖАН", UDim2.fromOffset(28, 27), UDim2.new(1, -56, 0, 42), 30, Theme.Mint, true)
+	self.resultSubtitle = text(self.result, "", UDim2.fromOffset(28, 77), UDim2.new(1, -56, 0, 25), 14, Theme.Muted)
+	self.resultStats = text(self.result, "", UDim2.fromOffset(28, 117), UDim2.new(1, -56, 0, 48), 15, Theme.Text, true)
+	text(self.result, "ВКЛАД КОМАНДЫ", UDim2.fromOffset(28, 177), UDim2.new(1, -56, 0, 18), 10, Theme.Muted, true)
+	self.resultRows = {}
+	for index = 1, 4 do
+		local row = text(self.result, "", UDim2.fromOffset(28, 201 + (index - 1) * 28), UDim2.new(1, -56, 0, 24), 13, Theme.Text)
+		self.resultRows[index] = row
+	end
+	self.replayButton = button(self.result, "ЕЩЁ ОДИН МАТЧ", UDim2.fromOffset(28, 333), UDim2.new(1, -56, 0, 48), Color3.fromRGB(45, 102, 83), function() self.actions.Send("Replay", {}) end)
+	self.resultHint = text(self.result, "", UDim2.fromOffset(28, 395), UDim2.new(1, -56, 0, 25), 11, Theme.Muted)
+	self.helpShade = create("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 0.35, BorderSizePixel = 0, Visible = false, Active = true, ZIndex = 60 }, self.root)
+	self.help = panel(self.helpShade, "Help", UDim2.new(0.5, 0, 0.5, 0), UDim2.fromOffset(600, 470), Theme.Background)
+	self.help.AnchorPoint = Vector2.new(0.5, 0.5)
+	text(self.help, "ДЕРЖИМ РУБЕЖ ВМЕСТЕ", UDim2.fromOffset(28, 24), UDim2.new(1, -56, 0, 38), 25, Theme.Mint, true)
+	text(self.help, "Кооперативная оборона на 1–4 игроков", UDim2.fromOffset(28, 67), UDim2.new(1, -56, 0, 23), 14, Theme.Muted)
+	local steps = {
+		{ "01", "Выберите площадку на карте, затем башню внизу.", "Или сначала башню, затем свободную площадку." },
+		{ "02", "Комбинируйте башни и улучшайте их до IV.", "Мортира не бьёт по воздуху. Страж, Криомант и Тесла — бьют." },
+		{ "03", "Метеор и Стужа общие для всей команды.", "Q — выбрать точку метеора, E — заморозить всех врагов." },
+		{ "04", "Отразите 20 волн и сохраните ядро.", "Боссы каждые 5 волн. Награда за врага делится по урону." },
+	}
+	for index, step in ipairs(steps) do
+		local y = 108 + (index - 1) * 61
+		text(self.help, step[1], UDim2.fromOffset(28, y), UDim2.fromOffset(34, 25), 19, Theme.Gold, true)
+		text(self.help, step[2], UDim2.fromOffset(73, y), UDim2.new(1, -101, 0, 23), 13, Theme.Text, true)
+		text(self.help, step[3], UDim2.fromOffset(73, y + 25), UDim2.new(1, -101, 0, 22), 11, Theme.Muted)
+	end
+	text(self.help, "WASD — камера · ПКМ — поворот · колесо / щипок — масштаб · R — обзор\n1–4 — башни · U — улучшить · Esc — отмена · Пробел — готовность / волна", UDim2.fromOffset(28, 363), UDim2.new(1, -56, 0, 40), 10, Theme.Muted).TextWrapped = true
+	button(self.help, "К ОБОРОНЕ", UDim2.fromOffset(28, 414), UDim2.new(1, -56, 0, 36), Color3.fromRGB(45, 102, 83), function() self:ShowHelp(false) end)
+end
+
+function UI:Mine()
+	if not self.state then return nil end
+	for _, player in ipairs(self.state.players) do if player.id == Players.LocalPlayer.UserId then return player end end
+	return nil
+end
+
+function UI:Resize()
+	local viewport = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(1280, 720)
+	self.compact = viewport.X &lt; 760
+	local medium = viewport.X &lt; 1080
+	self.top.Size = UDim2.new(1, self.compact and -24 or -32, 0, self.compact and 96 or 64)
+	self.top.Position = UDim2.fromOffset(self.compact and 12 or 16, 14)
+	self.brandSub.Visible = not self.compact
+	self.brand.Position = UDim2.fromOffset(self.compact and 12 or 18, self.compact and 7 or 9)
+	self.brand.TextSize = self.compact and 21 or 25
+	if self.compact then
+		self.waveStat.frame.Position = UDim2.fromOffset(12, 53); self.waveStat.frame.Size = UDim2.fromOffset(78, 40)
+		self.coreStat.frame.Position = UDim2.fromOffset(99, 53); self.coreStat.frame.Size = UDim2.fromOffset(118, 40)
+		self.goldStat.frame.Position = UDim2.fromOffset(231, 53); self.goldStat.frame.Size = UDim2.fromOffset(105, 40)
+		self.phaseStat.frame.Position = UDim2.fromOffset(122, 7); self.phaseStat.frame.Size = UDim2.fromOffset(math.max(100, viewport.X - 205), 40)
+		self.waveStat.value.TextSize = 17; self.coreStat.value.TextSize = 17; self.goldStat.value.TextSize = 17; self.phaseStat.value.TextSize = 17
+	else
+		local start = medium and 130 or 195
+		local gap = medium and 118 or 155
+		self.waveStat.frame.Position = UDim2.fromOffset(start, 9); self.waveStat.frame.Size = UDim2.fromOffset(105, 48)
+		self.coreStat.frame.Position = UDim2.fromOffset(start + gap, 9); self.coreStat.frame.Size = UDim2.fromOffset(medium and 110 or 145, 48)
+		self.goldStat.frame.Position = UDim2.fromOffset(start + gap * 2, 9); self.goldStat.frame.Size = UDim2.fromOffset(105, 48)
+		self.enemyStat.frame.Position = UDim2.fromOffset(start + gap * 3, 9); self.enemyStat.frame.Size = UDim2.fromOffset(125, 48)
+		self.phaseStat.frame.Position = UDim2.fromOffset(start + gap * (medium and 3 or 4), 9); self.phaseStat.frame.Size = UDim2.fromOffset(medium and 125 or 160, 48)
+		self.waveStat.value.TextSize = 21; self.coreStat.value.TextSize = 21; self.goldStat.value.TextSize = 21; self.phaseStat.value.TextSize = 21
+	end
+	self.enemyStat.frame.Visible = not medium and not self.compact
+	self.team.Visible = not self.compact or self.teamOpen
+	self.teamToggle.Visible = self.compact
+	self.team.Position = UDim2.fromOffset(self.compact and 12 or 16, self.compact and 154 or 92)
+	self.team.ZIndex = 25
+	for _, slot in ipairs(self.slots) do slot.row.ZIndex = 26; slot.name.ZIndex = 27; slot.detail.ZIndex = 27; slot.dot.ZIndex = 27 end
+	self.teamTitle.ZIndex = 26
+	local rightWidth = self.compact and 196 or (medium and 224 or 250)
+	self.preview.Position = UDim2.new(1, -rightWidth - 12, 0, self.compact and 116 or 92)
+	self.preview.Size = UDim2.fromOffset(rightWidth, 96)
+	self.command.Position = UDim2.new(1, -rightWidth - 12, 0, self.compact and 224 or 200)
+	self.command.Size = UDim2.fromOffset(rightWidth, 142)
+	local cardWidth = self.compact and 86 or (medium and 126 or 146)
+	local gap = self.compact and 6 or 8
+	local padding = self.compact and 8 or 10
+	local dockWidth = cardWidth * 4 + gap * 3 + padding * 2
+	self.dock.Size = UDim2.fromOffset(dockWidth, self.compact and 114 or 132)
+	for index, kind in ipairs(Config.TowerOrder) do
+		local item = self.shop[kind]
+		item.card.Position = UDim2.fromOffset(padding + (index - 1) * (cardWidth + gap), padding)
+		item.card.Size = UDim2.fromOffset(cardWidth, self.compact and 98 or 112)
+		item.name.TextSize = self.compact and 11 or 14
+		item.role.Visible = not self.compact; item.key.Visible = not self.compact
+		item.cost.Position = UDim2.fromOffset(11, self.compact and 73 or 87)
+		item.icon.Position = UDim2.fromOffset(self.compact and 20 or 12, 7)
+	end
+	self.abilities.Position = UDim2.new(0, self.compact and 12 or 16, 1, self.compact and -258 or -292)
+	self.abilities.Size = UDim2.fromOffset(self.compact and 145 or 192, 128)
+	self.meteorButton.Size = UDim2.new(1, 0, 0, self.compact and 42 or 46)
+	self.freezeButton.Position = UDim2.fromOffset(0, self.compact and 73 or 77)
+	self.freezeButton.Size = UDim2.new(1, 0, 0, self.compact and 42 or 46)
+	self.inspector.Position = UDim2.new(1, self.compact and -248 or -306, 0, self.compact and 116 or 92)
+	self.inspector.Size = UDim2.fromOffset(self.compact and 236 or 290, 354)
+	if self.compact then
+		self.damageStat.Position = UDim2.fromOffset(0, 0); self.damageValue.Position = UDim2.fromOffset(0, 21)
+		self.rangeStat.Position = UDim2.fromOffset(73, 0); self.rangeValue.Position = UDim2.fromOffset(73, 21)
+		self.rateStat.Position = UDim2.fromOffset(146, 0); self.rateValue.Position = UDim2.fromOffset(146, 21)
+		for index, priority in ipairs(Config.Priorities) do self.priorityButtons[priority].Position = UDim2.fromOffset(15 + (index - 1) * 70, 193); self.priorityButtons[priority].Size = UDim2.fromOffset(66, 30) end
+	else
+		self.rangeStat.Position = UDim2.fromOffset(88, 0); self.rangeValue.Position = UDim2.fromOffset(88, 21)
+		self.rateStat.Position = UDim2.fromOffset(176, 0); self.rateValue.Position = UDim2.fromOffset(176, 21)
+		for index, priority in ipairs(Config.Priorities) do self.priorityButtons[priority].Position = UDim2.fromOffset(15 + (index - 1) * 88, 193); self.priorityButtons[priority].Size = UDim2.fromOffset(82, 30) end
+	end
+	self.minimap.Visible = not medium and not self.compact
+	self.hint.Visible = not medium and not self.compact
+	self.help.Size = UDim2.fromOffset(math.min(600, viewport.X - 24), 470)
+	self.result.Size = UDim2.fromOffset(math.min(520, viewport.X - 24), 448)
+	self.toastRoot.Position = UDim2.new(0.5, 0, 0, self.compact and 116 or 90)
+	self.toastRoot.Size = UDim2.fromOffset(math.min(430, viewport.X - 30), 180)
+	self:RefreshVisibility()
+end
+
+function UI:RefreshVisibility()
+	local ended = self.state and (self.state.phase == "Victory" or self.state.phase == "Defeat")
+	self.inspector.Visible = self.selectedPad ~= nil and not ended
+	self.preview.Visible = self.selectedPad == nil and not ended
+	self.command.Visible = self.selectedPad == nil and not ended
+	-- On narrow screens the inspector replaces abilities instead of overlapping them.
+	self.abilities.Visible = not self.compact or (self.selectedPad == nil and not ended)
+	self.modalShade.Visible = ended == true
+end
+
+function UI:Update(state)
+	local first = self.state == nil
+	self.state = state; self.receivedAt = os.clock()
+	self.loading.Visible = false
+	self.waveStat.value.Text = string.format("%02d / %02d", state.wave, state.maxWaves)
+	self.coreStat.value.Text = state.coreHP .. " / " .. state.coreMax
+	self.coreBar.Size = UDim2.fromScale(math.clamp(state.coreHP / state.coreMax, 0, 1), 1)
+	self.coreBar.BackgroundColor3 = state.coreHP / state.coreMax &lt; 0.3 and Theme.Red or Theme.Mint
+	self.goldStat.value.Text = Format.Number(state.gold) .. "  ◆"
+	self.enemyStat.value.Text = tostring(state.remaining)
+	local phaseNames = { Lobby = "ПОДГОТОВКА", Combat = "ВОЛНА ИДЁТ", Intermission = "ПЕРЕДЫШКА", Victory = "ПОБЕДА", Defeat = "ПОРАЖЕНИЕ" }
+	self.phaseStat.title.Text = phaseNames[state.phase] or ""
+	self.phaseStat.value.Text = state.phase == "Combat" and (state.speed == 2 and "2×  В БОЮ" or "В БОЮ") or Format.Time(state.nextIn)
+	self.teamTitle.Text = "ОТРЯД  " .. #state.players .. " / 4"
+	for index, slot in ipairs(self.slots) do
+		local player = state.players[index]
+		if player then
+			slot.name.Text = player.name .. "  ·  ур. " .. player.level
+			slot.dot.BackgroundColor3 = player.id == Players.LocalPlayer.UserId and Theme.Mint or Theme.Blue
+			slot.detail.Text = state.phase == "Lobby" and (player.ready and "✓ Готов  ·  " .. Format.Number(player.gold) .. " ◆" or "Строит оборону  ·  " .. Format.Number(player.gold) .. " ◆") or (player.kills .. " добив.  ·  " .. Format.Number(player.damage) .. " урона")
+		else
+			slot.name.Text = "Свободное место"; slot.detail.Text = "Пригласите друга"; slot.dot.BackgroundColor3 = Theme.Stroke
+		end
+	end
+	local combat = state.phase == "Combat"
+	self.previewTitle.Text = (combat and "СЕЙЧАС · ВОЛНА " or "СЛЕДУЮЩАЯ ВОЛНА ") .. string.format("%02d", combat and state.wave or state.previewWave)
+	self.previewDescription.Text = Waves.Description(combat and state.wave or state.previewWave)
+	local counts = {}
+	for _, kind in ipairs({ "Scout", "Runner", "Brute", "Shield", "Wisp", "Boss" }) do
+		if state.preview[kind] then table.insert(counts, Config.Enemies[kind].name .. " ×" .. state.preview[kind]) end
+	end
+	self.previewCounts.Text = table.concat(counts, " · ")
+	self.waveBar.Size = UDim2.fromScale(combat and math.clamp(state.progress, 0, 1) or 1, 1)
+	local mine = self:Mine()
+	local lobby = state.phase == "Lobby"
+	local intermission = state.phase == "Intermission"
+	self.readyButton.Visible = lobby; self.normalButton.Visible = lobby; self.hardButton.Visible = lobby
+	self.skipButton.Visible = intermission
+	self.speed1.Visible = combat or intermission; self.speed2.Visible = combat or intermission
+	self.readyButton.Text = mine and mine.ready and "✓ ГОТОВ · ОТМЕНИТЬ" or "Я ГОТОВ"
+	self.normalButton.BackgroundColor3 = mine and mine.difficulty == "Normal" and Color3.fromRGB(44, 88, 91) or Theme.Panel2
+	self.hardButton.BackgroundColor3 = mine and mine.difficulty == "Hard" and Color3.fromRGB(117, 69, 65) or Theme.Panel2
+	self.speed1.BackgroundColor3 = mine and mine.speedVote == 1 and Color3.fromRGB(44, 88, 91) or Theme.Panel2
+	self.speed2.BackgroundColor3 = mine and mine.speedVote == 2 and Color3.fromRGB(44, 88, 91) or Theme.Panel2
+	self.speed1.Text = "1×"; self.speed2.Text = "2×"
+	local speedVotes = 0
+	for _, player in ipairs(state.players) do if player.speedVote == 2 then speedVotes += 1 end end
+	if lobby then
+		local hardVotes = 0
+		for _, player in ipairs(state.players) do if player.difficulty == "Hard" then hardVotes += 1 end end
+		self.commandHint.Text = string.format("Готовы %d/%d · Испытание %d/%d\nБольшинство решает. Можно строить заранее.", state.readyCount, #state.players, hardVotes, #state.players)
+	elseif intermission then
+		local votes = 0
+		for _, player in ipairs(state.players) do if player.skipVote then votes += 1 end end
+		self.skipButton.Text = "НАЧАТЬ РАНЬШЕ  ·  " .. votes .. "/" .. (math.floor(#state.players / 2) + 1)
+		self.commandHint.Text = "Передышка " .. Format.Time(state.nextIn) .. " · Улучшите башни.\n2× выбирается большинством отряда."
+	else
+		self.commandHint.Text = "Ускорение 2×: " .. speedVotes .. "/" .. #state.players .. " голосов.\nЯдро у команды общее. Берегите его."
+	end
+	for kind, item in pairs(self.shop) do
+		local affordable = state.gold &gt;= Config.Towers[kind].cost
+		item.cost.TextColor3 = affordable and Theme.Gold or Theme.Red
+		item.outline.Transparency = self.pendingType == kind and 0 or 0.65
+		item.outline.Thickness = self.pendingType == kind and 2 or 1
+	end
+	local meteorCD = state.cooldowns.Meteor or 0
+	local freezeCD = state.cooldowns.Freeze or 0
+	self.meteorButton.Text = self.targeting and "ВЫБЕРИТЕ ТОЧКУ" or (meteorCD &gt; 0 and "МЕТЕОР  ·  " .. math.ceil(meteorCD) .. " с" or "Q   МЕТЕОР")
+	self.freezeButton.Text = freezeCD &gt; 0 and "СТУЖА  ·  " .. math.ceil(freezeCD) .. " с" or "E   СТУЖА"
+	self.meteorButton.TextColor3 = self.targeting and Theme.Gold or (meteorCD &gt; 0 and Theme.Muted or Theme.Text)
+	self.freezeButton.TextColor3 = freezeCD &gt; 0 and Theme.Muted or Theme.Text
+	if state.phase == "Victory" or state.phase == "Defeat" then self:UpdateResult(state) end
+	self:RefreshVisibility()
+	if self.selectedPad then self.actions.RefreshSelection() end
+	if first then self:ShowHelp(true) end
+end
+
+function UI:Selection(padId, attributes, pendingType)
+	self.selectedPad = padId; self.pendingType = pendingType
+	if not padId then self:RefreshVisibility(); return end
+	local kind = attributes.TowerType
+	local occupied = kind ~= nil and kind ~= "" and Config.Towers[kind] ~= nil
+	self.inspectorTitle.Text = string.format("ПЛОЩАДКА %02d", padId)
+	self.statsFrame.Visible = occupied; self.priorityLabel.Visible = occupied
+	for _, b in pairs(self.priorityButtons) do b.Visible = occupied end
+	self.upgradeButton.Visible = occupied; self.sellButton.Visible = occupied
+	self.towerDescription.Visible = not occupied
+	if occupied then
+		local def = Config.Towers[kind]
+		local level = attributes.Level or 1
+		local stats = Config.Stats(kind, level)
+		local owner = attributes.OwnerId == Players.LocalPlayer.UserId
+		self.towerName.Text = def.name .. "  " .. Format.Roman(level); self.towerName.TextColor3 = def.color
+		self.towerOwner.Text = owner and "Ваша башня · улучшение до уровня IV" or "Владелец: " .. (attributes.OwnerName or "игрок")
+		self.damageValue.Text = tostring(math.floor(stats.damage + 0.5)); self.rangeValue.Text = tostring(stats.range); self.rateValue.Text = string.format("%.1f", 1 / stats.interval)
+		local cost = def.upgradeCosts[level]
+		self.upgradeButton.Text = cost and ("УЛУЧШИТЬ ДО " .. Format.Roman(level + 1) .. "  ·  " .. cost .. " ◆") or "МАКСИМАЛЬНЫЙ УРОВЕНЬ"
+		self.upgradeButton.BackgroundColor3 = owner and cost and Color3.fromRGB(45, 102, 83) or Theme.Panel2
+		self.sellButton.Text = "ПРОДАТЬ  ·  +" .. math.floor((attributes.Invested or def.cost) * Config.SellRefund) .. " ◆"
+		self.sellButton.Visible = owner
+		self.inspectorHint.Text = owner and "Продажа возвращает 70% всех вложений." or "Чужие башни нельзя улучшать или продавать."
+		for priority, b in pairs(self.priorityButtons) do b.BackgroundColor3 = attributes.Priority == priority and Color3.fromRGB(44, 88, 91) or Theme.Panel2 end
+	else
+		self.towerName.Text = "Свободная площадка"; self.towerName.TextColor3 = Theme.Text
+		self.towerOwner.Text = "Общее место для обороны команды"
+		self.towerDescription.Text = pendingType and ("Выбрана башня «" .. Config.Towers[pendingType].name .. "». Нажмите «ПОСТРОИТЬ» или выберите другую башню внизу.") or "Выберите башню в нижней панели. Стоимость спишется только при строительстве."
+		self.upgradeButton.Visible = true
+		self.upgradeButton.Text = pendingType and ("ПОСТРОИТЬ  ·  " .. Config.Towers[pendingType].cost .. " ◆") or "ВЫБЕРИТЕ БАШНЮ ВНИЗУ"
+		self.upgradeButton.BackgroundColor3 = pendingType and Color3.fromRGB(45, 102, 83) or Theme.Panel2
+		self.inspectorHint.Text = "1–4 — быстрый выбор типа башни"
+	end
+	self:RefreshVisibility()
+end
+
+function UI:UpdateResult(state)
+	local result = state.result
+	if not result then return end
+	self.resultTitle.Text = result.victory and "РУБЕЖ УДЕРЖАН" or "ЯДРО ПОТЕРЯНО"
+	self.resultTitle.TextColor3 = result.victory and Theme.Mint or Theme.Red
+	self.resultSubtitle.Text = result.victory and "Команда отразила все 20 волн. Отличная работа!" or "Попробуйте больше замедления и улучшений у поворотов."
+	self.resultStats.Text = "Волн отражено: " .. result.cleared .. " / 20     ·     Время: " .. Format.Time(result.duration) .. "\nЯдро: " .. result.coreHP .. "     ·     Режим: " .. Config.Difficulties[state.difficulty].label
+	local sorted = table.clone(state.players)
+	table.sort(sorted, function(a, b) return a.damage &gt; b.damage end)
+	for index, row in ipairs(self.resultRows) do
+		local player = sorted[index]
+		row.Text = player and string.format("%d.  %s     %s урона     %d добиваний", index, player.name, Format.Number(player.damage), player.kills) or ""
+	end
+	local votes = 0
+	for _, player in ipairs(state.players) do if player.replayVote then votes += 1 end end
+	local mine = self:Mine()
+	self.replayButton.Text = (mine and mine.replayVote and "ГОЛОС УЧТЁН  ·  " or "ЕЩЁ ОДИН МАТЧ  ·  ") .. votes .. "/" .. (math.floor(#state.players / 2) + 1)
+	self.resultHint.Text = "Новый матч начнётся автоматически через " .. Format.Time(state.nextIn) .. ". Прогресс аккаунта сохраняется."
+end
+
+function UI:SetTargeting(active)
+	self.targeting = active
+	if self.state then self.meteorButton.Text = active and "ВЫБЕРИТЕ ТОЧКУ" or "Q   МЕТЕОР" end
+end
+
+function UI:ShowHelp(visible)
+	self.helpShade.Visible = visible
+end
+
+function UI:Toast(message, tone)
+	if #self.toasts &gt;= 3 then
+		local oldest = table.remove(self.toasts, 1)
+		if oldest then oldest:Destroy() end
+	end
+	local color = tone == "danger" and Theme.Red or (tone == "success" and Theme.Mint or (tone == "ability" and Theme.Gold or Theme.Blue))
+	local frame = create("Frame", { Size = UDim2.new(1, 0, 0, 42), BackgroundColor3 = Theme.Background, BackgroundTransparency = 0.05, BorderSizePixel = 0, ZIndex = 41 }, self.toastRoot)
+	corner(frame, 8); stroke(frame, color, 0.4)
+	local accent = create("Frame", { Position = UDim2.fromOffset(0, 9), Size = UDim2.fromOffset(3, 24), BackgroundColor3 = color, BorderSizePixel = 0, ZIndex = 42 }, frame)
+	corner(accent, 2)
+	local label = text(frame, message, UDim2.fromOffset(14, 4), UDim2.new(1, -28, 1, -8), 12, Theme.Text, true)
+	label.TextWrapped = true; label.ZIndex = 42
+	table.insert(self.toasts, frame)
+	task.delay(3.8, function()
+		if frame.Parent then
+			local tween = TweenService:Create(frame, TweenInfo.new(0.25), { BackgroundTransparency = 1 })
+			tween:Play(); label.TextTransparency = 1; accent.BackgroundTransparency = 1
+			task.wait(0.25); frame:Destroy()
+			local index = table.find(self.toasts, frame); if index then table.remove(self.toasts, index) end
+		end
+	end)
+end
+
+function UI:UpdateMinimap(enemyFolder)
+	for _, dot in ipairs(self.mapDots:GetChildren()) do dot:Destroy() end
+	if not enemyFolder then return end
+	for _, enemy in ipairs(enemyFolder:GetChildren()) do
+		local kind = enemy:GetAttribute("EnemyKind")
+		if kind and Config.Enemies[kind] then
+			local position = enemy:GetPivot().Position
+			local size = Config.Enemies[kind].boss and 7 or 4
+			local dot = create("Frame", { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale((position.X + 88) / 176, (position.Z + 57) / 114), Size = UDim2.fromOffset(size, size), BackgroundColor3 = Config.Enemies[kind].color, BorderSizePixel = 0, ZIndex = 4 }, self.mapDots)
+			corner(dot, size / 2)
+		end
+	end
+end
+
+return UI
+</ProtectedString>
+              </Properties>
+            </Item>
+          </Item>
+          <Item class="LocalScript" referent="RBX28">
+            <Properties>
+              <string name="Name">Main</string>
+              <ProtectedString name="Source">-- All gameplay decisions stay on the server. This script is presentation + intent only.
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local StarterGui = game:GetService("StarterGui")
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Config = require(Shared:WaitForChild("Config"))
+local Controllers = script.Parent:WaitForChild("Controllers")
+local Theme = require(Controllers:WaitForChild("Theme"))
+local Camera = require(Controllers:WaitForChild("Camera"))
+local Effects = require(Controllers:WaitForChild("Effects"))
+local UI = require(Controllers:WaitForChild("UI"))
+
+local remotes = ReplicatedStorage:WaitForChild("TD_Remotes")
+local StateRemote = remotes:WaitForChild("State")
+local ActionRemote = remotes:WaitForChild("Action")
+local EffectsRemote = remotes:WaitForChild("Effects")
+local NoticeRemote = remotes:WaitForChild("Notice")
+local mapRoot = workspace:WaitForChild("TD_Map")
+local padsFolder = mapRoot:WaitForChild("Pads")
+local enemyFolder = mapRoot:WaitForChild("Enemies")
+
+for _, coreGui in ipairs({ Enum.CoreGuiType.Health, Enum.CoreGuiType.Backpack, Enum.CoreGuiType.PlayerList }) do
+	pcall(function() StarterGui:SetCoreGuiEnabled(coreGui, false) end)
+end
+task.spawn(function()
+	local playerModule = Players.LocalPlayer:WaitForChild("PlayerScripts"):WaitForChild("PlayerModule", 15)
+	if playerModule then pcall(function() require(playerModule):GetControls():Disable() end) end
+end)
+
+Camera:Init()
+Effects:Init()
+local state, selectedPad, pendingType, targeting = nil, nil, nil, false
+local lastPhase = nil
+local actions = {}
+local hud = UI.new(actions)
+
+local localFolder = Instance.new("Folder"); localFolder.Name = "TD_Selection"; localFolder.Parent = workspace
+local function indicator(name, radius, color, transparency)
+	local part = Instance.new("Part")
+	part.Name = name; part.Shape = Enum.PartType.Cylinder; part.Anchored = true
+	part.CanCollide = false; part.CanTouch = false; part.CanQuery = false
+	part.Material = Enum.Material.Neon; part.Transparency = transparency
+	part.Color = color; part.Size = Vector3.new(0.08, radius * 2, radius * 2)
+	part.CFrame = CFrame.new(0, 0.4, 0) * CFrame.Angles(0, 0, math.pi / 2)
+	part.Parent = localFolder
+	return part
+end
+local range = indicator("Range", 24, Theme.Mint, 0.88)
+local targetRing = indicator("MeteorTarget", Config.Abilities.Meteor.radius, Theme.Gold, 0.65)
+range.Transparency = 1; targetRing.Transparency = 1
+local highlight = Instance.new("Highlight")
+highlight.Name = "Selection"; highlight.FillTransparency = 0.92; highlight.OutlineTransparency = 0.1
+highlight.FillColor = Theme.Mint; highlight.OutlineColor = Theme.Mint; highlight.Enabled = false
+highlight.Parent = localFolder
+
+local function send(kind, payload)
+	payload = payload or {}; payload.kind = kind
+	ActionRemote:FireServer(payload)
+end
+local function getPad(padId)
+	return padId and padsFolder:FindFirstChild(string.format("Pad_%02d", padId)) or nil
+end
+local function stopTargeting()
+	targeting = false; targetRing.Transparency = 1; hud:SetTargeting(false)
+end
+local function deselect()
+	selectedPad = nil; pendingType = nil; range.Transparency = 1; highlight.Enabled = false
+	stopTargeting(); hud:Selection(nil, nil, nil)
+end
+
+local function refreshSelection()
+	local pad = getPad(selectedPad)
+	if not pad then
+		selectedPad = nil; range.Transparency = 1; highlight.Enabled = false
+		hud:Selection(nil, nil, pendingType); return
+	end
+	local attributes = pad:GetAttributes()
+	hud:Selection(selectedPad, attributes, pendingType)
+	local kind = attributes.TowerType
+	if kind and kind ~= "" and Config.Towers[kind] then
+		local stats = Config.Stats(kind, attributes.Level or 1)
+		range.Size = Vector3.new(0.08, stats.range * 2, stats.range * 2)
+		range.Color = Config.Towers[kind].color
+		range.CFrame = CFrame.new(pad.Position.X, 0.38, pad.Position.Z) * CFrame.Angles(0, 0, math.pi / 2)
+		range.Transparency = targeting and 1 or 0.88
+		local towers = mapRoot:FindFirstChild("Towers")
+		local model = towers and towers:FindFirstChild("Tower_" .. selectedPad)
+		highlight.Adornee = model or pad
+		highlight.FillColor = Config.Towers[kind].color; highlight.OutlineColor = Config.Towers[kind].color
+		highlight.Enabled = true
+	else
+		range.Transparency = 1; highlight.Adornee = pad; highlight.FillColor = Theme.Mint; highlight.OutlineColor = Theme.Mint; highlight.Enabled = true
+	end
+end
+
+local function build(kind)
+	if not selectedPad then pendingType = kind; hud.pendingType = kind; hud:Toast("Теперь выберите свободную площадку на карте.", "info"); return end
+	local pad = getPad(selectedPad)
+	if not pad then deselect(); return end
+	if pad:GetAttribute("TowerType") ~= "" then hud:Toast("Площадка занята. Выберите другую или улучшите эту башню.", "danger"); return end
+	send("Build", { padId = selectedPad, towerType = kind })
+	pendingType = nil; hud.pendingType = nil
+end
+
+local function chooseAbility(kind)
+	if not state or state.phase ~= "Combat" then hud:Toast("Способности доступны во время волны.", "info"); return end
+	if (state.cooldowns[kind] or 0) &gt; 0 then hud:Toast("Способность ещё восстанавливается.", "info"); return end
+	if kind == "Meteor" then
+		targeting = not targeting; targetRing.Transparency = targeting and 0.65 or 1; range.Transparency = 1
+		hud:SetTargeting(targeting)
+		if targeting then hud:Toast("Наведите на карту и нажмите. Esc — отмена.", "ability") end
+	else
+		send("Ability", { ability = "Freeze" })
+	end
+end
+
+actions.Send = send
+actions.ChooseTower = function(kind) stopTargeting(); build(kind); if state then hud:Update(state) end end
+actions.Deselect = deselect
+actions.RefreshSelection = refreshSelection
+actions.Upgrade = function()
+	if not selectedPad then return end
+	local pad = getPad(selectedPad)
+	if pad and pad:GetAttribute("TowerType") == "" and pendingType then build(pendingType)
+	else send("Upgrade", { padId = selectedPad }) end
+end
+actions.Sell = function() if selectedPad then send("Sell", { padId = selectedPad }) end end
+actions.Priority = function(value) if selectedPad then send("Priority", { padId = selectedPad, value = value }) end end
+actions.Ability = chooseAbility
+actions.FocusMap = function(position) Camera:SetCenter(position) end
+
+local function nearestPad(point)
+	local best, distance = nil, Config.Map.PadRadius + 1.2
+	for index, coordinates in ipairs(Config.Map.Pads) do
+		local x, z = coordinates[1] * Config.Map.Scale, coordinates[2] * Config.Map.Scale
+		local d = math.sqrt((point.X - x)^2 + ( point.Z - z)^2)
+		if d &lt; distance then best, distance = index, d end
+	end
+	return best
+end
+
+Camera.OnTap = function(screenPosition)
+	if hud.helpShade.Visible or hud.modalShade.Visible then return end
+	local point = Camera:GroundPoint(screenPosition)
+	if not point then if not targeting then deselect() end; return end
+	if targeting then
+		send("Ability", { ability = "Meteor", target = point })
+		stopTargeting(); return
+	end
+	local padId = nearestPad(point)
+	if padId then selectedPad = padId; refreshSelection()
+	else deselect() end
+end
+
+UserInputService.InputBegan:Connect(function(input, processed)
+	if processed then return end
+	if input.UserInputType ~= Enum.UserInputType.Keyboard then return end
+	local key = input.KeyCode
+	if key == Enum.KeyCode.Escape then
+		if hud.helpShade.Visible then hud:ShowHelp(false) else deselect() end
+		return
+	end
+	if hud.helpShade.Visible or hud.modalShade.Visible then return end
+	local number = nil
+	if key == Enum.KeyCode.One then number = 1 elseif key == Enum.KeyCode.Two then number = 2
+	elseif key == Enum.KeyCode.Three then number = 3 elseif key == Enum.KeyCode.Four then number = 4 end
+	if number and Config.TowerOrder[number] then actions.ChooseTower(Config.TowerOrder[number])
+	elseif key == Enum.KeyCode.Q then chooseAbility("Meteor")
+	elseif key == Enum.KeyCode.E then chooseAbility("Freeze")
+	elseif key == Enum.KeyCode.U then actions.Upgrade()
+	elseif key == Enum.KeyCode.H then hud:ShowHelp(true)
+	elseif key == Enum.KeyCode.F and selectedPad then
+		local pad = getPad(selectedPad); if pad then Camera:SetCenter(pad.Position) end
+	elseif key == Enum.KeyCode.Space and state then
+		if state.phase == "Lobby" then local mine = hud:Mine(); send("Ready", { ready = not (mine and mine.ready) })
+		elseif state.phase == "Intermission" then send("Skip", {}) end
+	end
+end)
+
+StateRemote.OnClientEvent:Connect(function(snapshot)
+	state = snapshot
+	if state.phase == "Lobby" and lastPhase ~= "Lobby" then deselect() end
+	lastPhase = state.phase
+	if targeting and (state.phase ~= "Combat" or (state.cooldowns.Meteor or 0) &gt; 0) then stopTargeting() end
+	hud:Update(state)
+end)
+EffectsRemote.OnClientEvent:Connect(function(batch) Effects:Play(batch) end)
+NoticeRemote.OnClientEvent:Connect(function(message, tone) hud:Toast(message, tone) end)
+
+local minimapElapsed = 0
+RunService.RenderStepped:Connect(function(dt)
+	if targeting then
+		local point = Camera:GroundPoint(UserInputService:GetMouseLocation())
+		if point then targetRing.CFrame = CFrame.new(point.X, 0.45, point.Z) * CFrame.Angles(0, 0, math.pi / 2); targetRing.Transparency = 0.65
+		else targetRing.Transparency = 1 end
+	end
+	minimapElapsed += dt
+	if minimapElapsed &gt;= 0.25 then minimapElapsed = 0; hud:UpdateMinimap(enemyFolder) end
+end)
+
+-- Ask until the server has loaded our profile; regular snapshots continue at 5 Hz.
+task.spawn(function()
+	for _ = 1, 20 do
+		if state then return end
+		send("Hello"); task.wait(1)
+	end
+	if not state then hud.loadingText.Text = "Сервер загружается. Если это не проходит, проверьте Output в Studio." end
+end)
+</ProtectedString>
+            </Properties>
+          </Item>
+        </Item>
+      </Item>
+    </Item>
+    <Item class="StarterGui" referent="RBX29">
+      <Properties>
+        <string name="Name">StarterGui</string>
+      </Properties>
+    </Item>
+    <Item class="StarterPack" referent="RBX30">
+      <Properties>
+        <string name="Name">StarterPack</string>
+      </Properties>
+    </Item>
+    <Item class="SoundService" referent="RBX31">
+      <Properties>
+        <string name="Name">SoundService</string>
+        <bool name="RespectFilteringEnabled">true</bool>
+      </Properties>
+    </Item>
+    <Item class="TextChatService" referent="RBX32">
+      <Properties>
+        <string name="Name">TextChatService</string>
+      </Properties>
+    </Item>
+  </Item>
+  <External>null</External>
+  <SharedStrings />
+</roblox>

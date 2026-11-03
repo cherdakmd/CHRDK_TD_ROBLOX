@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches: ["arena/05e832d7-chrdk-td-roblox", main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install Python test dependencies
+        run: python -m pip install -r requirements-dev.txt
+      - name: Python project tests
+        run: python -m unittest discover -s tests -p 'test_*.py' -v
+      - name: Install Luau CLI
+        run: |
+          curl -fsSL -o /tmp/luau.zip https://github.com/luau-lang/luau/releases/download/0.745/luau-ubuntu.zip
+          unzip -o /tmp/luau.zip -d /tmp/luau
+          chmod +x /tmp/luau/luau
+      - name: Headless Luau tests
+        run: python tests/run_tests.py --luau /tmp/luau/luau
+      - name: Build Studio place
+        run: python tools/build_place.py
+      - name: Upload place artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CHRDK_Rubezh-place
+          path: release/CHRDK_Rubezh.rbxlx
