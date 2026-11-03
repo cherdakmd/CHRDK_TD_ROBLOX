@@ -1,0 +1,28 @@
+name: Предложить улучшение
+description: Идея для следующей итерации «РУБЕЖА»
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Какую проблему решает идея?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Предлагаемое поведение
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Область
+      options: [Башни и баланс, Волны и враги, Кооператив, UI и камера, Карта и визуал, Сохранения, Инструменты и тесты, Другое]
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Альтернативы и риски
+      description: Например, влияние на баланс, мобильный UI или совместимость DataStore.

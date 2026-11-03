@@ -1,0 +1,37 @@
+name: Сообщить об ошибке
+description: Опишите проблему в игре, сборке или тестах
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: Что произошло?
+      description: Что вы делали и что пошло не так?
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Что ожидалось?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Шаги воспроизведения
+      placeholder: "1. Открыть place\n2. Выбрать площадку\n3. ..."
+    validations:
+      required: true
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Где воспроизводится?
+      options: [Roblox Studio Play, Studio Start Server/Players, Опубликованный опыт, Headless-тесты, Другое]
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Output / скриншоты
+      description: Приложите только относящиеся к ошибке строки. Удалите токены и персональные данные.
+      render: text

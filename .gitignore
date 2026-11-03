@@ -1,0 +1,22 @@
+# Local tools and caches
+.venv/
+.cache/
+__pycache__/
+*.pyc
+node_modules/
+build/
+
+# Roblox Studio locks and local places
+*.rbxl.lock
+*.rbxlx.lock
+*.rbxl
+
+# Generated release archives/checksums are attached to GitHub Releases, not Git
+release/*.zip
+release/SHA256SUMS.txt
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
